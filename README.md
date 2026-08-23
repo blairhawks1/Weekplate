@@ -1,5 +1,7 @@
 # WeekPlate
 
+Production: https://weekplate.blairhawks1.workers.dev/
+
 WeekPlate is a private, device-local meal planner for families. It builds one- or two-week dinner plans, creates store-priced shopping lists, tracks pantry leftovers and use-by dates, and includes 100 recipes with nutrition estimates.
 
 ## Run it
