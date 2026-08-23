@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>WeekPlate planner simulations</title>
+<style>body{font:15px system-ui;max-width:760px;margin:40px auto;padding:0 20px}pre{white-space:pre-wrap;background:#f3f5ef;padding:18px;border-radius:12px}.pass{color:#176b37}.fail{color:#a22}</style>
+<h1>WeekPlate planner simulations</h1>
+<pre id="out">Running…</pre>
+<iframe id="app" src="../index.html?test=1" hidden></iframe>
+<script>
+const out=document.getElementById('out'), frame=document.getElementById('app');
+const log=[];
+function assert(ok,message){if(!ok)throw new Error(message);}
+function spans(week){return week.recipes.reduce((n,r)=>n+(r.double?2:1),0);}
+frame.addEventListener('load',()=>setTimeout(run,50),{once:true});
+function run(){
+  try{
+    const T=frame.contentWindow.__WP_TEST__;
+    assert(T,'test API is available');
+    let planned=0;
+    for(let i=0;i<100;i++){
+      const person={name:'Solo',age:35,diet:['Vegan']};
+      T.reset({household:[person],dinners:7,altNights:4,leftoverNights:i%4,horizon:1});
+      const week=T.plan();
+      assert(week&&spans(week)===7,'solo vegan week covers seven nights');
+      assert(week.recipes.every(r=>!T.violates(r.title,person)),'solo vegan never receives an off-diet main');
+      planned++;
+    }
+    log.push('✓ 100 solo-vegan weeks respected every dietary restriction');
+    for(let i=0;i<60;i++){
+      T.reset({household:[{name:'A',age:35,diet:[]},{name:'B',age:35,diet:['Vegetarian']}],dinners:7,altNights:2,leftoverNights:i%3,horizon:2,blocked:['Chicken Fajitas']});
+      const week=T.plan(), restricted={name:'B',age:35,diet:['Vegetarian']};
+      assert(week&&spans(week)===14,'two-week plan covers fourteen nights');
+      assert(!week.recipes.some(r=>r.title==='Chicken Fajitas'),'blocked recipes stay blocked');
+      const off=week.recipes.reduce((n,r)=>n+(T.violates(r.title,restricted)?(r.double?2:1):0),0);
+      assert(off<=4,'alternate allowance is capped across two weeks');
+      planned++;
+    }
+    log.push('✓ 60 two-week plans respected blocking, horizon, leftovers, and alternate limits');
+    T.reset({pantry:[{name:'spinach',qty:1,unit:'lb',addedAt:'2026-01-01',useBy:'2020-01-01'}]});
+    assert(T.pantryUrgency('spinach')===7,'overdue pantry ingredients receive maximum priority');
+    assert(T.pantryUrgency('ground beef')===0,'absent pantry ingredients receive no priority');
+    log.push('✓ expiration urgency scoring behaves as expected');
+    out.className='pass';out.textContent=`All ${planned} planner simulations passed.\n\n${log.join('\n')}`;
+  }catch(error){out.className='fail';out.textContent='FAILED\n\n'+error.stack;throw error;}
+}
+</script>
+</html>

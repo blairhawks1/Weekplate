@@ -1,12 +1,12 @@
 # WeekPlate
 
-WeekPlate is a private, device-local meal planner for families. It builds one- or two-week dinner plans, creates store-priced shopping lists, tracks pantry leftovers, and includes 100 recipes with nutrition estimates.
+WeekPlate is a private, device-local meal planner for families. It builds one- or two-week dinner plans, creates store-priced shopping lists, tracks pantry leftovers and use-by dates, and includes 100 recipes with nutrition estimates.
 
 ## Run it
 
 Open `index.html` in a modern browser. There is no build step and no required backend.
 
-For iPhone use, publish `index.html` on any static host, open the URL in Safari, then choose **Share → Add to Home Screen**.
+For iPhone use, publish the repository on a static host, open the URL in Safari, then choose **Share → Add to Home Screen**. The manifest and service worker provide a proper icon, standalone display, and offline app shell.
 
 ## Privacy and storage
 
@@ -23,6 +23,8 @@ Run the dependency-free integrity checks with:
 ```sh
 python3 tests/integrity.py
 ```
+
+Serve the repository over HTTP and open `tests/planner-simulation.html` to run 160 randomized planner simulations covering diets, alternate meals, two-week horizons, leftovers, blocking, and expiry scoring.
 
 See `HANDOVER.md` for the architecture, planner behavior, storage fallbacks, and regression scenarios.
 

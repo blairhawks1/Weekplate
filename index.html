@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-title" content="WeekPlate">
 <meta name="theme-color" content="#F3F5EF">
 <meta name="description" content="Private, device-local weekly meal planning, grocery pricing, and pantry tracking.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>WeekPlate — Dinner Prep Planner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -172,6 +174,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;heigh
 .pitem .nm{flex:1;font-weight:600;font-size:14px}
 .pitem .qty{font-size:13px;color:var(--muted)}
 .pitem .x{color:var(--danger);padding:6px 8px;font-size:17px}
+.pitem.expiring{background:var(--squash-bg);margin:0 -8px;padding:10px 8px;border-radius:10px}
+.pitem.expired{background:#FBEAE8;margin:0 -8px;padding:10px 8px;border-radius:10px}
+.expiry{display:block;margin-top:3px;font-size:11.5px;color:var(--muted)}
+.expiry.soon{color:#9A611A;font-weight:700}.expiry.late{color:var(--danger);font-weight:700}
+.expirydate{width:132px;padding:7px 6px;border-radius:8px;border:1px solid var(--line);background:var(--card);font-size:12px}
 .addrow{display:flex;gap:8px;margin-top:10px}
 .addrow input{flex:1;padding:11px 12px;border-radius:11px;border:1.5px solid var(--line);background:var(--card);font-size:14px;min-width:0}
 .addrow input.small{flex:0 0 66px}
@@ -323,7 +330,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v24</span></h1>
+    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v25</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -352,7 +359,7 @@ const DEFAULTS = {
   priceBook:{},               // user prices from receipts: name -> {walmart,aldi,pkg,pkgQty,unit,ts}
   lastTitles:[],
   diet:[], avoid:'',
-  pantry:[],                  // {name, qty, unit}
+  pantry:[],                  // {name, qty, unit, addedAt, useBy}
   week:null,                  // {recipes:[], shopping:[], pricedAt, weekOf}
   weeksDone:0,
   favorites:[],               // recipe titles to favor
@@ -416,6 +423,7 @@ function migrate(){
   S.macro = Object.assign({mode:'off',cal:0,protein:0,carbs:0,fat:0}, S.macro||{});
   S.priceBook = S.priceBook||{}; S.customRecipes=S.customRecipes||[]; S.photos=S.photos||{};
   S.favorites=S.favorites||[]; S.blocked=S.blocked||[]; S.history=S.history||[];
+  S.pantry=(S.pantry||[]).map(p=>Object.assign({addedAt:null,useBy:null},p));
   // v24: the unauthenticated browser-only AI path could never work safely.
   // Keep planning private, dependable, and fully offline.
   S.mode='lib';
@@ -1065,10 +1073,10 @@ function libBuild(fixed, keepWeekOf, avoidTitles){
       r.ing.forEach(([nm])=>{
         const cat = PRICES[nm].cat;
         const perish = cat==='Produce'||cat==='Dairy & Eggs'||cat==='Meat & Seafood';
-        if(S.pantry.some(p=>normName(p.name)===normName(nm))) pb += perish? 2.5 : 0.25;
+        if(S.pantry.some(p=>normName(p.name)===normName(nm))) pb += (perish?2.5:0.25)+pantryUrgency(nm);
         if((cat==='Produce'||cat==='Dairy & Eggs') && chosenIng.has(nm)) s += 0.8;
       });
-      s += Math.min(pb, 6);
+      s += Math.min(pb, 12);
       restricted.forEach(p=>{ if(violatesPerson(r,p)) s -= 0.8; });
       if(S.lastTitles.includes(r.t)) s -= 6;
       if(favActive.has(r.t)) s += 8;
@@ -1337,6 +1345,35 @@ $('#progCancel').onclick = ()=>{ cancelled = true; $('#progress').classList.remo
 
 function round2(n){ return Math.round(n*100)/100; }
 function normName(s){ return s.toLowerCase().replace(/\b(fresh|large|small|medium|boneless|skinless)\b/g,'').replace(/s\b/,'').replace(/[^a-z ]/g,'').trim(); }
+function isoToday(){ return new Date().toISOString().slice(0,10); }
+function addDaysISO(days){ const d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); }
+function defaultShelfDays(name){
+  const item=PRICES[normName(name)]||PRICES[String(name).toLowerCase()];
+  return {'Meat & Seafood':2,'Produce':5,'Dairy & Eggs':7,'Bakery':5,'Frozen':90,'Pantry':180}[item?.cat]||14;
+}
+function pantryDaysLeft(p){
+  if(!p?.useBy) return null;
+  const end=new Date(p.useBy+'T12:00:00'), now=new Date(); now.setHours(12,0,0,0);
+  return Math.round((end-now)/86400000);
+}
+function pantryExpiryLabel(p){
+  const days=pantryDaysLeft(p);
+  if(days==null) return p.addedAt? 'Added '+new Date(p.addedAt+'T12:00:00').toLocaleDateString() : 'Date unknown';
+  if(days<0) return `${Math.abs(days)} day${Math.abs(days)!==1?'s':''} past use-by`;
+  if(days===0) return 'Use today';
+  if(days===1) return 'Use tomorrow';
+  return `Use within ${days} days`;
+}
+function pantryUrgency(name){
+  const p=(S.pantry||[]).find(x=>normName(x.name)===normName(name));
+  if(!p) return 0;
+  const days=pantryDaysLeft(p);
+  if(days==null) return 0;
+  if(days<=0) return 7;
+  if(days<=2) return 5;
+  if(days<=5) return 3;
+  return 0;
+}
 
 function consolidate(recipes){
   const map = {};
@@ -1384,8 +1421,8 @@ function finishWeek(){
     if(it.pkgQty && it.leftover < 0.1*it.pkgQty) return; // scrap, nearly used up
     // skip trivially small leftovers of cheap staples? keep all, user can delete
     const pi = S.pantry.find(p=> normName(p.name)===normName(it.name) && p.unit===it.unit);
-    if(pi) pi.qty = round2(pi.qty + it.leftover);
-    else S.pantry.push({name:it.name, qty:it.leftover, unit:it.unit});
+    if(pi){ pi.qty=round2(pi.qty+it.leftover); pi.addedAt=isoToday(); pi.useBy=addDaysISO(defaultShelfDays(it.name)); }
+    else S.pantry.push({name:it.name,qty:it.leftover,unit:it.unit,addedAt:isoToday(),useBy:addDaysISO(defaultShelfDays(it.name))});
     added++;
   });
   S.lastTitles = w.recipes.map(r=>r.title);
@@ -2689,7 +2726,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v24 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v25 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -2961,11 +2998,14 @@ function viewPantry(){
     <h2>Pantry & carryover</h2>
     <p class="sub">Leftovers land here when you finish a week. Next week's plan uses these up first.</p>`;
   if(!S.pantry.length) h += `<div class="empty" style="padding:22px"><div class="big">🫙</div><p>Nothing on hand yet.</p></div>`;
-  else h += S.pantry.map((p,i)=>`<div class="pitem">
-      <span class="nm">${esc(p.name)}</span>
-      <span class="qty mono">${round2(p.qty)} ${esc(p.unit)}</span>
-      <button class="x" onclick="S.pantry.splice(${i},1);save();render()">✕</button>
-    </div>`).join('');
+  else h += S.pantry.slice().sort((a,b)=>(pantryDaysLeft(a)??9999)-(pantryDaysLeft(b)??9999)).map(p=>{
+    const i=S.pantry.indexOf(p), days=pantryDaysLeft(p);
+    return `<div class="pitem ${days!=null&&days<0?'expired':days!=null&&days<=3?'expiring':''}">
+      <span class="nm">${esc(p.name)}<span class="expiry ${days!=null&&days<0?'late':days!=null&&days<=3?'soon':''}">${esc(pantryExpiryLabel(p))}</span></span>
+      <span><span class="qty mono">${round2(p.qty)} ${esc(p.unit)}</span><br><input class="expirydate" type="date" aria-label="Use-by date for ${esc(p.name)}" value="${esc(p.useBy||'')}" onchange="S.pantry[${i}].useBy=this.value||null;save();render()"></span>
+      <button class="x" aria-label="Remove ${esc(p.name)}" onclick="S.pantry.splice(${i},1);save();render()">✕</button>
+    </div>`;
+  }).join('');
   h += `<div class="addrow">
       <input id="pnm" placeholder="Ingredient" autocapitalize="none">
       <input id="pq" class="small" placeholder="Qty" inputmode="decimal">
@@ -2999,7 +3039,10 @@ function viewPantry(){
 function addPantry(){
   const n=$('#pnm').value.trim(), q=parseFloat($('#pq').value), u=$('#pu').value.trim()||'count';
   if(!n||!q){ toast('Enter a name and quantity'); return; }
-  S.pantry.push({name:n, qty:round2(q), unit:u}); save(); render();
+  const existing=S.pantry.find(p=>normName(p.name)===normName(n)&&p.unit===u);
+  if(existing){ existing.qty=round2(existing.qty+q); existing.addedAt=isoToday(); existing.useBy=addDaysISO(defaultShelfDays(n)); }
+  else S.pantry.push({name:n,qty:round2(q),unit:u,addedAt:isoToday(),useBy:addDaysISO(defaultShelfDays(n))});
+  save(); render();
 }
 
 /* ----- setup ----- */
@@ -3190,7 +3233,22 @@ async function apiTest(){
 }
 
 /* ================= boot ================= */
-(async ()=>{ await loadState(); applyCustomRecipes(); render(); await checkSharedLink(); })();
+(async ()=>{
+  await loadState(); applyCustomRecipes(); render(); await checkSharedLink();
+  if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+    navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+  }
+  if(new URLSearchParams(location.search).has('test')){
+    window.__WP_TEST__={
+      reset(overrides={}){ S=Object.assign(JSON.parse(JSON.stringify(DEFAULTS)),overrides); migrate(); applyCustomRecipes(); },
+      plan(){ libPlan(); return JSON.parse(JSON.stringify(S.week)); },
+      state(){ return JSON.parse(JSON.stringify(S)); },
+      recipe(title){ return RECIPES.find(r=>r.t===title); },
+      violates(title,person){ const r=RECIPES.find(x=>x.t===title); return r?violatesPerson(r,person):false; },
+      pantryUrgency
+    };
+  }
+})();
 </script>
 </body>
 </html>

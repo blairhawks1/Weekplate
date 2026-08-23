@@ -2,7 +2,9 @@
 
 **What it is:** a single-file, offline-first meal-planning web app. One `index.html` (~223 KB) containing all HTML, CSS, JS, a 100-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
 
-**Current version:** v24 (shown as a badge next to the logo, and in the Guide footer).
+**Current version:** v25 (shown as a badge next to the logo, and in the Guide footer).
+
+**v25:** installable PWA shell with offline caching and home-screen icons; pantry added/use-by dates with expiry-aware planner weighting; and a browser simulation harness covering 160 randomized planner scenarios.
 
 **v24 takeover note:** the visible AI web-search mode was removed because a static browser app cannot safely hold an API credential, and the existing unauthenticated requests could not succeed reliably. Planning now consistently uses the private, offline library. The dormant legacy functions remain temporarily to keep this release low-risk and can be deleted in a later cleanup.
 
@@ -156,4 +158,4 @@ Key invariants worth regression-testing:
 - If modularizing: separate concerns are already section-commented (`/* ===== X ===== */`). Natural modules: data (PRICES/RECIPES/STEPS/NUT), planner, pricing, PDF, storage, receipt-OCR, share, and per-tab views. **Re-inline to one file for deployment.**
 - Preserve the global-`S` + `render()` model or migrate wholesale to a framework — but a half-migration will be painful because handlers are inline `onclick` strings referencing globals.
 - Data tables (PRICES/RECIPES/STEPS/NUT) are hand-authored and cross-validated; keep the validation sweep if you edit them.
-- Version badge: search the file for the current `v24` label (two spots: the header badge and the Guide footer) and bump on each release.
+- Version badge: search the file for the current `v25` label (two spots: the header badge and the Guide footer) and bump on each release.
