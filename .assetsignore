@@ -1,0 +1,7 @@
+.git*
+.assetsignore
+.gitignore
+README.md
+HANDOVER.md
+tests
+wrangler.jsonc
