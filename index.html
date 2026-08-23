@@ -8,6 +8,15 @@
 <meta name="apple-mobile-web-app-title" content="WeekPlate">
 <meta name="theme-color" content="#F3F5EF">
 <meta name="description" content="Private, device-local weekly meal planning, grocery pricing, and pantry tracking.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://weekplate.blairhawks1.workers.dev/">
+<meta property="og:title" content="WeekPlate — Dinner decisions, handled.">
+<meta property="og:description" content="Build a family-ready meal plan, priced shopping list, and smarter pantry in one tap.">
+<meta property="og:image" content="https://weekplate.blairhawks1.workers.dev/icons/og-weekplate.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="WeekPlate — Dinner decisions, handled.">
+<meta name="twitter:description" content="Build a family-ready meal plan, priced shopping list, and smarter pantry in one tap.">
+<meta name="twitter:image" content="https://weekplate.blairhawks1.workers.dev/icons/og-weekplate.jpg">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>WeekPlate — Dinner Prep Planner</title>
@@ -112,6 +121,25 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;heigh
 .person .x{color:var(--danger);font-size:18px;padding:6px 8px}
 
 /* ---------- plan tab ---------- */
+.homehero{position:relative;overflow:hidden;border-radius:20px;margin:4px 0 12px;min-height:390px;background:var(--spruce-deep);box-shadow:0 12px 30px rgba(31,66,49,.18)}
+.homehero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.homehero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(17,42,29,.03) 20%,rgba(17,42,29,.9) 77%,#173526 100%)}
+.homecopy{position:relative;z-index:1;padding:188px 20px 20px;color:#fff}
+.homeeyebrow{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:99px;background:rgba(255,255,255,.16);backdrop-filter:blur(8px);font-size:10.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase}
+.homecopy h2{font-family:"Bricolage Grotesque",sans-serif;font-size:32px;line-height:1.03;letter-spacing:-1px;margin:10px 0 8px;color:#fff;max-width:390px}
+.homecopy p{margin:0 0 16px;color:#E3EEE7;font-size:14px;max-width:430px}
+.homecopy .btn{background:var(--squash);color:#2B241A;box-shadow:0 5px 14px rgba(0,0,0,.2)}
+.homestats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.homestat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center}
+.homestat b{display:block;font:800 16px "Bricolage Grotesque",sans-serif;color:var(--spruce-deep)}
+.homestat span{font-size:10.5px;color:var(--muted)}
+.howgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.howstep{background:#FBFCFA;border:1px solid var(--line);border-radius:12px;padding:11px}
+.howstep i{display:flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:9px;background:var(--squash-bg);color:#9A611A;font-style:normal;font-weight:800;font-size:12px}
+.howstep b{display:block;margin:8px 0 3px;font-size:12.5px;color:var(--spruce-deep)}
+.howstep span{display:block;font-size:10.5px;line-height:1.35;color:var(--muted)}
+.homesetup{display:flex;justify-content:center;margin:10px 0 2px}.homesetup button{font-size:12.5px;font-weight:700;color:var(--spruce);text-decoration:underline;text-underline-offset:3px}
+@media(max-width:380px){.homecopy h2{font-size:28px}.homehero{min-height:410px}.howgrid{grid-template-columns:1fr}.howstep{display:grid;grid-template-columns:32px 1fr;column-gap:8px}.howstep b{margin:1px 0}.howstep span{grid-column:2}}
 .recipe{padding:0;overflow:hidden}
 .recipe .top{padding:14px 16px 10px}
 .recipe .day{font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--squash)}
@@ -330,7 +358,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v25</span></h1>
+    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v26</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -2726,7 +2754,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v25 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v26 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -2734,15 +2762,30 @@ function viewPlan(){
   let h = '';
   if(lastErr){ h += `<div class="err"><b>Couldn't finish planning:</b> ${esc(lastErr)}<br>Tap the button to retry — it resumes from scratch and falls back to offline estimates if search is blocked.</div>`; lastErr=null; }
   if(!S.week){
-    h += `<div class="card">
-      <h2>Plan ${(S.horizon||1)>1?'the next 2 weeks':"this week's dinners"}</h2>
-      <p class="sub">${S.dinners*(S.horizon||1)} dinners${(S.horizon||1)>1?' (one shopping trip)':''} · ≤ ${S.maxMinutes} min each · ${targetServings()} servings
-      ${S.pantry.length? ` · will use up ${S.pantry.length} pantry item${S.pantry.length>1?'s':''}`:''}</p>
-      ${dietSummaryTxt()? `<p class="sub" style="margin-top:-4px">Cooking for: ${dietSummaryTxt()}</p>`:''}
-      <button class="btn" onclick="generateWeek()">Find recipes & build list</button>
-      <p class="sub" style="margin-top:10px">Instant and private: picks from ${RECIPES.length} weeknight dinners, prioritizes your pantry, and prices every ingredient with a built-in Walmart & Aldi price book.${(S.horizon||1)>1?' Bulk packages get shared across both weeks so less goes to waste.':''}</p>
+    h += `<section class="homehero" aria-labelledby="homeTitle">
+      <img src="icons/home-hero.jpg" alt="Lemon chicken, roasted vegetables, and a colorful grain bowl ready for the week">
+      <div class="homecopy">
+        <span class="homeeyebrow">Private · practical · less waste</span>
+        <h2 id="homeTitle">Dinner decisions, handled.</h2>
+        <p>Build a family-ready ${S.horizon>1?'two-week':'weekly'} plan, a priced shopping list, and a smarter pantry in one tap.</p>
+        <button class="btn" onclick="generateWeek()">Build my ${S.horizon>1?'2-week':'weekly'} plan</button>
+      </div>
+    </section>
+    <div class="homestats" aria-label="WeekPlate highlights">
+      <div class="homestat"><b>${RECIPES.length}</b><span>tested dinners</span></div>
+      <div class="homestat"><b>${S.dinners*(S.horizon||1)}</b><span>nights planned</span></div>
+      <div class="homestat"><b>On-device</b><span>private by design</span></div>
+    </div>
+    <div class="card">
+      <div class="row"><div><h2>Your plan, at a glance</h2><p class="sub" style="margin:3px 0 0">≤ ${S.maxMinutes} min · ${targetServings()} servings${S.pantry.length? ` · ${S.pantry.length} pantry item${S.pantry.length>1?'s':''} prioritized`:''}</p></div><span class="pill leaf">Ready</span></div>
+      ${dietSummaryTxt()? `<p class="sub" style="margin:10px 0 0"><b>Cooking for:</b> ${dietSummaryTxt()}</p>`:''}
+      <div class="howgrid">
+        <div class="howstep"><i>1</i><b>Plan</b><span>Matches time, diets, budget, and favorites.</span></div>
+        <div class="howstep"><i>2</i><b>Shop</b><span>Compares Walmart and Aldi by aisle.</span></div>
+        <div class="howstep"><i>3</i><b>Waste less</b><span>Uses pantry food before its use-by date.</span></div>
+      </div>
+      <div class="homesetup"><button onclick="tab='setup';render();document.getElementById('main').focus()">Adjust household and planning settings</button></div>
     </div>`;
-    if(!S.pantry.length && !S.weeksDone) h += `<div class="empty"><div class="big">🍳</div><p><b>First week?</b></p><p>Set your household and time limit in <b>Setup</b>, then plan. Leftover ingredients roll into next week automatically.</p></div>`;
     return h;
   }
   const w = S.week;
