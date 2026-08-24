@@ -148,6 +148,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;heigh
 .recipe .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .recipe .usesbar{background:var(--leaf-bg);padding:8px 16px;font-size:12px;color:var(--spruce-deep);border-top:1px solid var(--line)}
 .recipe .usesbar.alt{background:var(--squash-bg);color:#8A5717}
+.schedulebar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#F8FAF6;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.schedulebar button{font-weight:800;color:var(--spruce);padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card)}
+.schedulebar label{display:flex;align-items:center;gap:6px;flex:1}.schedulebar select{min-width:0;flex:1;padding:7px;border:1px solid var(--line);border-radius:9px;background:var(--card);font-size:12px;font-weight:700;color:var(--ink)}
 .recipe .foot{display:flex;border-top:1px solid var(--line)}
 .recipe .foot button{flex:1;padding:11px;font-size:13px;font-weight:700;color:var(--spruce)}
 .recipe .foot button+button{border-left:1px solid var(--line)}
@@ -400,7 +403,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v32</span></h1>
+    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v33</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -442,6 +445,7 @@ const DEFAULTS = {
   macro:{mode:'off',cal:0,protein:0,carbs:0,fat:0},  // per-serving targets; protein=min, others=max
   horizon:1,                  // 1 = one week, 2 = two-week plan (one shop, bulk shared)
   photos:{},                  // recipe title -> {src (compressed dataURL), ts}
+  nightLimits:{},             // "week-day" -> max minutes for that calendar night
   onboardingDone:false        // first-run guide completion
 };
 let S = JSON.parse(JSON.stringify(DEFAULTS));
@@ -494,6 +498,7 @@ function migrate(){
   if(S.diet && S.diet.length){ S.household.forEach(p=>{ S.diet.forEach(d=>{ if(!p.diet.includes(d)) p.diet.push(d); }); }); S.diet=[]; }
   S.macro = Object.assign({mode:'off',cal:0,protein:0,carbs:0,fat:0}, S.macro||{});
   S.priceBook = S.priceBook||{}; S.customRecipes=S.customRecipes||[]; S.photos=S.photos||{};
+  S.nightLimits=S.nightLimits||{};
   S.allergens=typeof S.allergens==='string'?S.allergens:'';
   S.favorites=S.favorites||[]; S.blocked=S.blocked||[]; S.history=S.history||[];
   if(S.week && typeof S.week.planApproved==='undefined') S.week.planApproved=true;
@@ -1314,7 +1319,7 @@ function libPrice(items){
     it.leftover=round2(it.packs*it.pkgQty-it.need);
   });
 }
-function libSwap(i){
+function libSwap(i, maxOverride){
   const w=S.week, tgt=w.servings;
   const oldRec = w.recipes[i];
   const span = oldRec.double?2:1;
@@ -1328,7 +1333,7 @@ function libSwap(i){
     restricted.forEach(p=>{ if(violatesPerson(src,p)) off.set(p, off.get(p)+sp); });
   });
   const allow = new Map(); restricted.forEach(p=> allow.set(p, altPoolFor(p).length ? (S.altNights??2) : 0));
-  let pool = libPool().filter(r=> !used.includes(r.t)
+  let pool = libPool().filter(r=> (!maxOverride || r.m<=maxOverride) && !used.includes(r.t)
     && restricted.every(p=> !violatesPerson(r,p) || off.get(p)+span <= allow.get(p)));
   if(oldRec.double){
     const dpool = pool.filter(r=> reheatsWell(r.t) && restricted.every(p=>!violatesPerson(r,p)));
@@ -1339,7 +1344,7 @@ function libSwap(i){
     const mp2 = pool.filter(r=>macroOK(r,1)); if(mp2.length) pool = mp2;
     else { const mp3=pool.filter(r=>macroOK(r,1.35)); if(mp3.length) pool=mp3; }
   }
-  if(!pool.length){ toast('No other eligible recipes in the library'); return; }
+  if(!pool.length){ toast(maxOverride?`No eligible dinner fits ${maxOverride} minutes`:'No other eligible recipes in the library'); return false; }
   const r = pool[Math.floor(Math.random()*pool.length)];
   const rec = libRecipeObj(r, oldRec.day, scale);
   if(oldRec.double){ rec.double=true; rec.leftoverDay=oldRec.leftoverDay; }
@@ -1347,6 +1352,7 @@ function libSwap(i){
   w.recipes[i] = rec;
   finalizeWeek(w.recipes, w.weekOf, false);
   toast('Recipe swapped');
+  return true;
 }
 
 /* ================= plan generation ================= */
@@ -2823,7 +2829,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v32 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v33 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -2860,7 +2866,7 @@ function viewPlan(){
   if(w.shared) h += `<div class="card carry"><h2>📲 Shared plan</h2>
     <p class="sub" style="margin:6px 0 0">${w.sharedFrom? esc(w.sharedFrom)+' sent you this week.':'This week was shared with you.'} Cook it, shop it, check items off — it's yours now. Check-offs stay on this phone.</p></div>`;
   if(!w.planApproved){
-    h += `<div class="card reviewbar"><h2>Review your plan</h2><p class="sub">Make it feel right before shopping. Swap anything, lock the keepers, or remove a dinner—then approve the week.</p>
+    h += `<div class="card reviewbar"><h2>Review your plan</h2><p class="sub">Move meals to better days, shorten busy nights, swap anything, or lock the keepers—then approve the week.</p>
       <div class="reviewactions"><button class="btn ghost" onclick="libReshuffle()">Reshuffle</button><button class="btn" style="background:var(--squash);color:#2B241A" onclick="approvePlan()">Approve plan</button></div></div>`;
   } else {
     h += `<div class="card reviewbar done"><div class="row"><div><h2>✓ Plan approved</h2><p class="sub">Your shopping list is ready.</p></div><button class="chip" onclick="S.week.planApproved=false;save();render()">Edit plan</button></div></div>`;
@@ -2868,11 +2874,12 @@ function viewPlan(){
   const calCost = r=>{ const src=RECIPES.find(x=>x.t===r.title); return src?recipeCost4(src)*((r.servings||w.servings)/4):0; };
   let calWeek=0;
   h += `<section aria-labelledby="calendarTitle"><div class="row"><h2 id="calendarTitle" style="font-size:18px;margin:4px 2px">Your dinner calendar</h2><span class="pill leaf">${w.recipes.reduce((n,r)=>n+(r.double?2:1),0)} nights</span></div><div class="plancal">`;
-  w.recipes.forEach((r,i)=>{
+  w.recipes.map((r,i)=>({r,i})).sort((a,b)=>((a.r.week||1)-(b.r.week||1))*7+DAYS.indexOf(a.r.day)-DAYS.indexOf(b.r.day)).forEach(({r,i})=>{
     const rw=r.week||1;
     if((w.horizon||1)>1 && rw!==calWeek){ calWeek=rw; h+=`<div class="calweek">Week ${rw}</div>`; }
     const mins=(r.prepMin||0)+(r.cookMin||0);
-    h += `<button class="calday" onclick="document.getElementById('meal${i}').scrollIntoView({behavior:'smooth',block:'start'})"><span class="cd">${esc(r.day)}${r.locked?' · 🔒':''}</span><span class="ct">${esc(r.title)}</span><span class="cm"><span>${mins} min</span><span>≈${money(calCost(r))}</span>${r.double?'<span>Cook ×2</span>':''}</span></button>`;
+    const lim=nightLimitFor(r);
+    h += `<button class="calday" onclick="document.getElementById('meal${i}').scrollIntoView({behavior:'smooth',block:'start'})"><span class="cd">${esc(r.day)}${r.locked?' · 🔒':''}</span><span class="ct">${esc(r.title)}</span><span class="cm"><span>${mins} min</span><span>≈${money(calCost(r))}</span>${lim?`<span>≤ ${lim} min</span>`:''}${r.double?'<span>Cook ×2</span>':''}</span></button>`;
     if(r.leftoverDay) h += `<button class="calday leftover" onclick="document.getElementById('meal${i}').scrollIntoView({behavior:'smooth',block:'start'})"><span class="cd">${esc(r.leftoverDay)}</span><span class="ct">Leftovers · ${esc(r.title)}</span><span class="cm"><span>No cooking</span><span>Already covered</span></span></button>`;
   });
   h += `</div></section>`;
@@ -2899,6 +2906,10 @@ function viewPlan(){
       </div>
       ${uses.length? `<div class="usesbar">♻️ Uses from pantry: ${uses.map(esc).join(', ')}</div>`:''}
       ${(r.offFor&&r.offFor.length)? `<div class="usesbar alt">🍽 ${r.offFor.map(esc).join(' & ')} eats their own meal tonight (see Alternates below)</div>`:''}
+      <div class="schedulebar">
+        <button onclick="openMoveMeal(${i})">Move day</button>
+        <label>Time limit <select onchange="setNightLimit(${i},+this.value)">${[[0,'Default'],[15,'15 min'],[20,'20 min'],[30,'30 min'],[45,'45 min'],[60,'60 min']].map(([v,l])=>`<option value="${v}" ${nightLimitFor(r)===v?'selected':''}>${l}</option>`).join('')}</select></label>
+      </div>
       <ul class="ing-list" id="ing${i}">
         ${(r.ingredients||[]).map(x=>`<li><span class="q mono">${round2(x.qty)} ${esc(x.unit)}</span> ${esc(x.name)}</li>`).join('')}
       </ul>
@@ -2960,6 +2971,52 @@ function removeMeal(i){
   S.week.recipes.splice(i,1);
   rebuildWeekShopping(); S.week.planApproved=false; save(); render();
   toast('Dinner removed');
+}
+function nightKey(r){ return `${r.week||1}-${r.day}`; }
+function nightLimitFor(r){ return +(S.nightLimits||{})[nightKey(r)]||0; }
+function openMoveMeal(i){
+  const r=S.week&&S.week.recipes[i]; if(!r) return;
+  const H=S.week.horizon||1;
+  const rows=[];
+  for(let wk=1;wk<=H;wk++) DAYS.forEach(day=>{
+    const j=S.week.recipes.findIndex((x,xi)=>xi!==i&&(x.week||1)===wk&&x.day===day);
+    const leftover=S.week.recipes.some((x,xi)=>xi!==i&&(x.leftoverWeek||x.week||1)===wk&&x.leftoverDay===day);
+    const current=(r.week||1)===wk&&r.day===day;
+    const pairedMismatch=r.double&&(j<0||!S.week.recipes[j].double);
+    const label=(H>1?`Week ${wk} · `:'')+day;
+    rows.push(`<button class="btn ghost" style="margin:7px 0;justify-content:space-between" ${current||leftover||pairedMismatch?'disabled':''} onclick="moveMealTo(${i},${wk},'${day}')"><span>${label}</span><span style="font-size:12px;font-weight:500">${current?'Current':leftover?'Leftover night':pairedMismatch?'Cook ×2 stays paired':j>=0?`Swap with ${esc(S.week.recipes[j].title)}`:'Open night'}</span></button>`);
+  });
+  $('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Close</button></div><div class="day">Move dinner</div><h2 class="disp" style="font-size:21px">${esc(r.title)}</h2><p class="sub">Choose another day. If a dinner is already there, the two meals swap places.</p>${rows.join('')}</div>`;
+  $('#sheet').classList.add('show'); $('#sheet').scrollTop=0;
+}
+function moveMealTo(i,wk,day){
+  const r=S.week&&S.week.recipes[i]; if(!r) return;
+  const j=S.week.recipes.findIndex((x,xi)=>xi!==i&&(x.week||1)===wk&&x.day===day);
+  if(j>=0){
+    const other=S.week.recipes[j], oldDay=r.day, oldWeek=r.week||1;
+    r.day=other.day; r.week=other.week||1; other.day=oldDay; other.week=oldWeek;
+    syncLeftoverSchedule(r); syncLeftoverSchedule(other);
+  }else{
+    r.day=day; r.week=wk; syncLeftoverSchedule(r);
+  }
+  rebuildWeekShopping(); S.week.planApproved=false; save(); closeSheet(); render(); toast('Dinner moved');
+}
+function syncLeftoverSchedule(r){
+  if(!r.double){ delete r.leftoverDay; delete r.leftoverWeek; return; }
+  const di=DAYS.indexOf(r.day)+1; r.leftoverDay=DAYS[di%7]; r.leftoverWeek=(r.week||1)+(di>=7?1:0);
+}
+function setNightLimit(i,limit){
+  const r=S.week&&S.week.recipes[i]; if(!r) return;
+  S.nightLimits=S.nightLimits||{};
+  const key=nightKey(r), previous=S.nightLimits[key]||0;
+  if(limit) S.nightLimits[key]=limit; else delete S.nightLimits[key];
+  const mins=(r.prepMin||0)+(r.cookMin||0);
+  if(limit && mins>limit){
+    if(r.locked){ if(previous)S.nightLimits[key]=previous;else delete S.nightLimits[key]; save();render();toast('Unlock this dinner before shortening the night'); return; }
+    if(!libSwap(i,limit)){ if(previous)S.nightLimits[key]=previous;else delete S.nightLimits[key]; save();render(); }
+    return;
+  }
+  S.week.planApproved=false; save(); render(); toast(limit?`${r.day} set to ${limit} minutes or less`:`${r.day} uses the default time`);
 }
 function rerunWeek(hi){
   const wk=S.history[hi]; if(!wk) return;
