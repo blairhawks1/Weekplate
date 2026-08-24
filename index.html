@@ -96,6 +96,8 @@ nav .dot{width:4px;height:4px;border-radius:2px;background:transparent}
 .pcard .pname{flex:1;min-width:0;padding:9px 11px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);font-weight:700;font-size:14.5px}
 .pcard select{padding:9px 8px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);font-weight:600;font-size:13.5px}
 .pcard .x{color:var(--danger);font-size:17px;padding:6px 6px}
+.allergenfield{display:block;margin-top:10px;font-size:11px;font-weight:800;color:var(--spruce-deep)}
+.allergenfield input{display:block;width:100%;margin-top:5px;padding:9px 11px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);font-size:13.5px;color:var(--ink)}
 .chip.mini{padding:5px 10px;font-size:12px}
 /* stepper */
 .stepper{display:flex;align-items:center;gap:0;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
@@ -398,7 +400,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v31</span></h1>
+    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v32</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -420,7 +422,7 @@ nav button{font-size:10px;min-height:48px}
 <script>
 /* ================= state & storage ================= */
 const DEFAULTS = {
-  household:[{name:'',age:35,diet:[]},{name:'',age:35,diet:[]}],
+  household:[{name:'',age:35,diet:[],allergens:''},{name:'',age:35,diet:[],allergens:''}],
   dinners:7, maxMinutes:45,
   store:'compare',            // walmart | aldi | compare
   mode:'lib',                 // lib (built-in, offline) | ai (web search)
@@ -488,7 +490,7 @@ async function rawSet(str){
 }
 
 function migrate(){
-  S.household = (S.household||[]).map(p=>Object.assign({name:'',diet:[]}, p));
+  S.household = (S.household||[]).map(p=>Object.assign({name:'',diet:[],allergens:''}, p));
   if(S.diet && S.diet.length){ S.household.forEach(p=>{ S.diet.forEach(d=>{ if(!p.diet.includes(d)) p.diet.push(d); }); }); S.diet=[]; }
   S.macro = Object.assign({mode:'off',cal:0,protein:0,carbs:0,fat:0}, S.macro||{});
   S.priceBook = S.priceBook||{}; S.customRecipes=S.customRecipes||[]; S.photos=S.photos||{};
@@ -1047,11 +1049,15 @@ const ALLERGEN_ALIASES={
   'soy':['soy sauce','tofu','edamame'],'sesame':['sesame oil'],'egg':['egg'],'eggs':['egg']
 };
 function csvTerms(v){ return String(v||'').toLowerCase().split(',').map(s=>s.trim()).filter(Boolean); }
-function allergenList(){
-  const out=[]; csvTerms(S.allergens).forEach(a=>{ out.push(a); (ALLERGEN_ALIASES[a]||[]).forEach(x=>out.push(x)); });
+function expandAllergens(value){
+  const out=[]; csvTerms(value).forEach(a=>{ out.push(a); (ALLERGEN_ALIASES[a]||[]).forEach(x=>out.push(x)); });
   return [...new Set(out)];
 }
-function avoidList(){ return [...new Set(csvTerms(S.avoid).concat(allergenList()))]; }
+function allergenList(){ return expandAllergens(S.allergens); }
+function avoidList(){
+  const individual=(S.household||[]).flatMap(p=>expandAllergens(p.allergens));
+  return [...new Set(csvTerms(S.avoid).concat(allergenList(),individual))];
+}
 function violatesPerson(src, p){
   return (p.diet||[]).some(d=> !src.tags.includes(DIET_TAG[d]));
 }
@@ -2817,7 +2823,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v31 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v32 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -3212,7 +3218,7 @@ function onboardDiet(i,d){
   const n=a.indexOf(d); if(n>=0)a.splice(n,1);else a.push(d);
   S.household[i].diet=a; save(); renderOnboarding();
 }
-function onboardAddPerson(){ S.household.push({name:'',age:35,diet:[]}); save(); renderOnboarding(); }
+function onboardAddPerson(){ S.household.push({name:'',age:35,diet:[],allergens:''}); save(); renderOnboarding(); }
 function onboardRemovePerson(i){ if(S.household.length>1){ S.household.splice(i,1); save(); renderOnboarding(); } }
 async function finishOnboarding(){
   S.onboardingDone=true;
@@ -3249,6 +3255,7 @@ function renderOnboarding(){
         ${S.household.length>1?`<button class="x" aria-label="Remove ${esc(personLabel(p,i))}" onclick="onboardRemovePerson(${i})">✕</button>`:''}</div>
         <div class="factor" style="margin:7px 2px">${ageLabel(p.age)} · ${ageFactor(p.age)}× portion</div>
         <div class="chiprow">${DIETS.map(d=>`<button class="chip mini ${(p.diet||[]).includes(d)?'on':''}" onclick="onboardDiet(${i},'${d}')">${d}</button>`).join('')}</div>
+        <label class="allergenfield">Allergens for ${esc(personLabel(p,i))}<input value="${esc(p.allergens||'')}" placeholder="e.g. peanuts, shellfish" onchange="S.household[${i}].allergens=this.value;save()"></label>
       </div>`).join('')}
       <button class="btn ghost" onclick="onboardAddPerson()">+ Add person</button>`;
   } else if(onboardStep===2){
@@ -3296,8 +3303,11 @@ function viewSetup(){
       <div class="chiprow">
         ${DIETS.map(d=>`<button class="chip mini ${(p.diet||[]).includes(d)?'on':''}" onclick="toggleDiet(${i},'${d}')">${d}</button>`).join('')}
       </div>
+      <label class="allergenfield">Allergens for ${esc(personLabel(p,i))}
+        <input value="${esc(p.allergens||'')}" placeholder="e.g. peanuts, shellfish" onchange="S.household[${i}].allergens=this.value;save()">
+      </label>
     </div>`).join('')}
-    <button class="btn ghost" style="margin-top:12px" onclick="S.household.push({name:'',age:35,diet:[]});save();render()">+ Add person</button>
+    <button class="btn ghost" style="margin-top:12px" onclick="S.household.push({name:'',age:35,diet:[],allergens:''});save();render()">+ Add person</button>
   </div>
 
   <div class="card">
@@ -3365,7 +3375,7 @@ function viewSetup(){
 
   <div class="card">
     <h2>Allergens (whole household)</h2>
-    <p class="sub">Enter allergens separated by commas. WeekPlate will exclude recipes with matching ingredients for everyone.</p>
+    <p class="sub">Use this for household-wide concerns. Individual allergens belong with each person above. Either type is excluded from the entire shared plan.</p>
     <textarea id="allergens" placeholder="e.g. peanuts, shellfish, dairy">${esc(S.allergens)}</textarea>
     <p class="sub" style="margin:8px 0 0">For safety, always check ingredient and package labels—especially for cross-contact or severe allergies.</p>
   </div>

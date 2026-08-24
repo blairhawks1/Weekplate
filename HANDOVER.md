@@ -2,7 +2,9 @@
 
 **What it is:** a single-file, offline-first meal-planning web app. One `index.html` (~223 KB) containing all HTML, CSS, JS, a 100-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
 
-**Current version:** v31 (shown as a badge next to the logo, and in the Guide footer).
+**Current version:** v32 (shown as a badge next to the logo, and in the Guide footer).
+
+**v32:** added per-person allergen entry beside each person's dietary chips in Setup and onboarding. Individual allergens are identified with the person but excluded from the entire shared plan for safety; the whole-household allergen field remains available.
 
 **v31:** added a dedicated whole-household allergens field in Setup, separate from dislikes. The offline planner excludes matching recipe titles and ingredients, with aliases for common allergen groups such as shellfish, dairy, wheat/gluten, soy, fish, and peanuts.
 
