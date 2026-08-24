@@ -398,7 +398,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v30</span></h1>
+    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v31</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -427,7 +427,7 @@ const DEFAULTS = {
   altNights:2,                // nights/week a restricted person gets their own meal
   priceBook:{},               // user prices from receipts: name -> {walmart,aldi,pkg,pkgQty,unit,ts}
   lastTitles:[],
-  diet:[], avoid:'',
+  diet:[], avoid:'', allergens:'',
   pantry:[],                  // {name, qty, unit, addedAt, useBy}
   week:null,                  // {recipes:[], shopping:[], pricedAt, weekOf}
   weeksDone:0,
@@ -492,6 +492,7 @@ function migrate(){
   if(S.diet && S.diet.length){ S.household.forEach(p=>{ S.diet.forEach(d=>{ if(!p.diet.includes(d)) p.diet.push(d); }); }); S.diet=[]; }
   S.macro = Object.assign({mode:'off',cal:0,protein:0,carbs:0,fat:0}, S.macro||{});
   S.priceBook = S.priceBook||{}; S.customRecipes=S.customRecipes||[]; S.photos=S.photos||{};
+  S.allergens=typeof S.allergens==='string'?S.allergens:'';
   S.favorites=S.favorites||[]; S.blocked=S.blocked||[]; S.history=S.history||[];
   if(S.week && typeof S.week.planApproved==='undefined') S.week.planApproved=true;
   S.pantry=(S.pantry||[]).map(p=>Object.assign({addedAt:null,useBy:null},p));
@@ -1035,9 +1036,22 @@ const STEPS = {
 /* ===== offline planner ===== */
 const DIET_TAG = {'Vegetarian':'vegetarian','Vegan':'vegan','Gluten-free':'gf','Dairy-free':'df','Low-carb':'lc','Kid-friendly':'kid'};
 function passesAvoid(r, avoid){
-  return !avoid.some(a=> r.t.toLowerCase().includes(a) || r.ing.some(([n])=>n.includes(a)));
+  return !avoid.some(a=> r.t.toLowerCase().includes(a) || r.ing.some(([n])=>n.toLowerCase().includes(a)));
 }
-function avoidList(){ return S.avoid.toLowerCase().split(',').map(s=>s.trim()).filter(Boolean); }
+const ALLERGEN_ALIASES={
+  'shellfish':['shrimp'],'fish':['salmon','cod','tuna'],'peanut':['peanut butter'],'peanuts':['peanut butter'],
+  'dairy':['milk','cheese','butter','cream','yogurt','mozzarella','cheddar','parmesan','feta','ricotta'],
+  'milk':['milk','cheese','butter','cream','yogurt','mozzarella','cheddar','parmesan','feta','ricotta'],
+  'wheat':['bread','panko','tortilla','spaghetti','penne','noodle','pita','pizza dough','tortellini'],
+  'gluten':['bread','panko','tortilla','spaghetti','penne','noodle','pita','pizza dough','tortellini'],
+  'soy':['soy sauce','tofu','edamame'],'sesame':['sesame oil'],'egg':['egg'],'eggs':['egg']
+};
+function csvTerms(v){ return String(v||'').toLowerCase().split(',').map(s=>s.trim()).filter(Boolean); }
+function allergenList(){
+  const out=[]; csvTerms(S.allergens).forEach(a=>{ out.push(a); (ALLERGEN_ALIASES[a]||[]).forEach(x=>out.push(x)); });
+  return [...new Set(out)];
+}
+function avoidList(){ return [...new Set(csvTerms(S.avoid).concat(allergenList()))]; }
 function violatesPerson(src, p){
   return (p.diet||[]).some(d=> !src.tags.includes(DIET_TAG[d]));
 }
@@ -1353,7 +1367,7 @@ async function aiGenerate(){
   const n = S.dinners, tgt = targetServings();
   const perP = S.household.filter(p=>(p.diet||[]).length).map((p)=>`${personLabel(p,S.household.indexOf(p))}: ${p.diet.join(', ')}`).join('; ');
   const dietTxt = perP? `Household dietary requirements (STRICT — every dinner must be safe for every person): ${perP}.` : '';
-  const avoidTxt = S.avoid.trim()? `Never include these ingredients/dishes: ${S.avoid.trim()}.` : '';
+  const avoidTxt = avoidList().length? `Never include these ingredients/dishes: ${avoidList().join(', ')}.` : '';
   const pantryTxt = S.pantry.length
     ? `PANTRY TO USE UP (prioritize recipes that use these before they go to waste): ${S.pantry.map(p=>`${p.qty} ${p.unit} ${p.name}`).join('; ')}.`
     : 'Pantry is empty.';
@@ -2803,7 +2817,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v30 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v31 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -2973,7 +2987,7 @@ async function swapRecipe(i){
   const others = S.week.recipes.filter((_,x)=>x!==i).map(r=>r.title).join('; ');
   const perP = S.household.filter(p=>(p.diet||[]).length).map((p)=>`${personLabel(p,S.household.indexOf(p))}: ${p.diet.join(', ')}`).join('; ');
   const dietTxt = perP? `Household dietary requirements (STRICT — must be safe for every person): ${perP}.`:'';
-  const avoidTxt = S.avoid.trim()? `Never include: ${S.avoid.trim()}.`:'';
+  const avoidTxt = avoidList().length? `Never include: ${avoidList().join(', ')}.`:'';
   try{
     const p = `Find ONE real dinner recipe (web search if available), total time <= ${S.maxMinutes} min, scaled to ${tgt} servings. ${dietTxt} ${avoidTxt}
 Must be different from all of these: ${others}; ${S.week.recipes[i].title}.
@@ -3350,9 +3364,16 @@ function viewSetup(){
   </div>
 
   <div class="card">
-    <h2>Never include (whole household)</h2>
-    <p class="sub">Diet restrictions are set per person above. List hard dislikes or allergens here.</p>
-    <textarea id="avoid" placeholder="e.g. mushrooms, shellfish, cilantro">${esc(S.avoid)}</textarea>
+    <h2>Allergens (whole household)</h2>
+    <p class="sub">Enter allergens separated by commas. WeekPlate will exclude recipes with matching ingredients for everyone.</p>
+    <textarea id="allergens" placeholder="e.g. peanuts, shellfish, dairy">${esc(S.allergens)}</textarea>
+    <p class="sub" style="margin:8px 0 0">For safety, always check ingredient and package labels—especially for cross-contact or severe allergies.</p>
+  </div>
+
+  <div class="card">
+    <h2>Hard dislikes (whole household)</h2>
+    <p class="sub">List ingredients or dishes nobody wants, separated by commas.</p>
+    <textarea id="avoid" placeholder="e.g. mushrooms, cilantro, olives">${esc(S.avoid)}</textarea>
   </div>
 
   <div class="card">
@@ -3433,6 +3454,7 @@ function bindSetup(){
   mm.oninput=()=>{ S.maxMinutes=+mm.value; paint(); };
   mm.onchange=()=>{ save(); };
   $('#avoid').onchange=e=>{ S.avoid=e.target.value; save(); };
+  $('#allergens').onchange=e=>{ S.allergens=e.target.value; save(); };
 }
 
 async function apiTest(){
