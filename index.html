@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -126,7 +125,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;heigh
 .homehero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .homehero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(17,42,29,.03) 20%,rgba(17,42,29,.9) 77%,#173526 100%)}
 .homecopy{position:relative;z-index:1;padding:188px 20px 20px;color:#fff}
-.homeeyebrow{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:99px;background:rgba(255,255,255,.16);backdrop-filter:blur(8px);font-size:10.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase}
 .homecopy h2{font-family:"Bricolage Grotesque",sans-serif;font-size:32px;line-height:1.03;letter-spacing:-1px;margin:10px 0 8px;color:#fff;max-width:390px}
 .homecopy p{margin:0 0 16px;color:#E3EEE7;font-size:14px;max-width:430px}
 .homecopy .btn{background:var(--squash);color:#2B241A;box-shadow:0 5px 14px rgba(0,0,0,.2)}
@@ -359,7 +357,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v26</span></h1>
+    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v27</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -2755,7 +2753,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v26 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v27 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -2766,7 +2764,6 @@ function viewPlan(){
     h += `<section class="homehero" aria-labelledby="homeTitle">
       <img src="icons/home-hero.jpg" alt="Lemon chicken, roasted vegetables, and a colorful grain bowl ready for the week">
       <div class="homecopy">
-        <span class="homeeyebrow">Private · practical · less waste</span>
         <h2 id="homeTitle">Dinner decisions, handled.</h2>
         <p>Build a family-ready ${S.horizon>1?'two-week':'weekly'} plan, a priced shopping list, and a smarter pantry in one tap.</p>
         <button class="btn" onclick="generateWeek()">Build my ${S.horizon>1?'2-week':'weekly'} plan</button>
