@@ -1,8 +1,10 @@
 # WeekPlate — Project Handover
 
-**What it is:** a single-file, offline-first meal-planning web app. One `index.html` (~223 KB) containing all HTML, CSS, JS, a 100-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
+**What it is:** a single-file, offline-first meal-planning web app. One `index.html` containing all HTML, CSS, JS, a 150-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
 
-**Current version:** v33 (shown as a badge next to the logo, and in the Guide footer).
+**Current version:** v34 (shown as a badge next to the logo, and in the Guide footer).
+
+**v34:** expanded the complete offline recipe library from 100 to 150 dinners. All 50 additions include directions, planner tags, pricing-compatible ingredients, and nutrition coverage, with broader quick-night, family, seafood, meat, vegetarian, and vegan choices.
 
 **v33:** added per-meal scheduling controls during plan review. Meals can move to open nights or swap days with another dinner, while cook-double meals stay paired with leftovers. Each calendar night can also have its own time limit; choosing a shorter limit automatically finds an eligible faster recipe for that night.
 
