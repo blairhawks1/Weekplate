@@ -2,7 +2,9 @@
 
 **What it is:** a single-file, offline-first meal-planning web app. One `index.html` (~223 KB) containing all HTML, CSS, JS, a 100-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
 
-**Current version:** v27 (shown as a badge next to the logo, and in the Guide footer).
+**Current version:** v28 (shown as a badge next to the logo, and in the Guide footer).
+
+**v28:** added a four-step, mobile-first onboarding guide for new users covering household needs, planning style, store, and budget. Existing users are not interrupted, and the guide can be reopened from Setup.
 
 **v27:** simplified the home hero by removing the “Private · practical · less waste” eyebrow copy.
 

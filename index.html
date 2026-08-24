@@ -352,12 +352,38 @@ nav button{font-size:10px;min-height:48px}
 .mnmiss{font-size:12.5px;color:var(--muted);line-height:1.5}
 .mnmiss span{color:var(--ink);font-weight:600}
 .chip.on{border-color:var(--spruce);background:var(--leaf-bg);color:var(--spruce-deep)}
+
+/* first-run setup guide */
+#onboarding{position:fixed;inset:0;z-index:90;background:var(--paper);display:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#onboarding.show{display:block}
+.onboard-in{width:min(100%,560px);min-height:100%;margin:0 auto;padding:calc(16px + var(--safe-t)) 18px calc(110px + var(--safe-b))}
+.onboard-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.onboard-brand{font-family:Georgia,serif;font-size:20px;font-weight:800;color:var(--spruce-deep)}
+.onboard-brand span{color:var(--squash)}
+.onboard-skip{font-size:13px;font-weight:700;color:var(--muted);background:none;padding:8px}
+.onboard-progress{display:flex;gap:6px;flex:1;max-width:180px}
+.onboard-progress i{height:6px;flex:1;border-radius:99px;background:var(--line)}
+.onboard-progress i.on{background:var(--leaf)}
+.onboard-hero{width:100%;height:220px;object-fit:cover;border-radius:20px;margin:4px 0 22px;box-shadow:0 10px 30px rgba(35,74,61,.12)}
+.onboard-kicker{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--squash);margin-bottom:8px}
+.onboard-title{font-family:Georgia,serif;font-size:32px;line-height:1.08;color:var(--spruce-deep);margin:0 0 10px}
+.onboard-copy{font-size:15px;line-height:1.55;color:var(--muted);margin:0 0 20px}
+.onboard-panel{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:15px;margin:12px 0}
+.onboard-panel h3{font-size:15px;margin:0 0 9px;color:var(--ink)}
+.onboard-actions{position:fixed;left:0;right:0;bottom:0;z-index:2;background:linear-gradient(transparent,var(--paper) 22%);padding:24px 18px calc(14px + var(--safe-b))}
+.onboard-actions-in{width:min(100%,524px);margin:0 auto;display:flex;gap:10px}
+.onboard-actions .btn{margin:0}
+.onboard-actions .back{width:auto;flex:0 0 92px}
+.onboard-summary{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:14px 0}
+.onboard-summary div{background:var(--leaf-bg);border-radius:12px;padding:11px}
+.onboard-summary small{display:block;color:var(--muted);font-size:11px;margin-bottom:3px}
+.onboard-summary b{font-size:14px;color:var(--spruce-deep)}
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v27</span></h1>
+    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v28</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -374,6 +400,7 @@ nav button{font-size:10px;min-height:48px}
 </div>
 <div id="sheet"></div>
 <div id="shop"></div>
+<div id="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboardTitle"></div>
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 <script>
 /* ================= state & storage ================= */
@@ -397,7 +424,8 @@ const DEFAULTS = {
   customRecipes:[],           // user-added recipes, same shape as library entries
   macro:{mode:'off',cal:0,protein:0,carbs:0,fat:0},  // per-serving targets; protein=min, others=max
   horizon:1,                  // 1 = one week, 2 = two-week plan (one shop, bulk shared)
-  photos:{}                   // recipe title -> {src (compressed dataURL), ts}
+  photos:{},                  // recipe title -> {src (compressed dataURL), ts}
+  onboardingDone:false        // first-run guide completion
 };
 let S = JSON.parse(JSON.stringify(DEFAULTS));
 let mem = {};               // fallback if window.storage unavailable
@@ -460,7 +488,12 @@ async function loadState(){
   let raw=null;
   try{ raw = await rawGet(); }catch(e){}
   if(raw){
-    try{ S = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), JSON.parse(raw)); }
+    try{
+      const stored=JSON.parse(raw);
+      // Saved data from before v28 belongs to an existing user; never interrupt them.
+      if(!Object.prototype.hasOwnProperty.call(stored,'onboardingDone')) stored.onboardingDone=true;
+      S = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), stored);
+    }
     catch(e){ /* corrupt payload: keep defaults rather than crash */ }
   } else if(mem.state){ S = mem.state; }
   migrate();
@@ -535,6 +568,7 @@ async function restoreFromText(txt){
   try{ obj = JSON.parse(txt.trim()); }
   catch(e){ toast('That backup is not valid'); return; }
   if(!obj || typeof obj!=='object' || !obj.household){ toast('That backup is not valid'); return; }
+  if(!Object.prototype.hasOwnProperty.call(obj,'onboardingDone')) obj.onboardingDone=true;
   S = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), obj);
   migrate(); applyCustomRecipes(); clearCostCache(); clearNutCache();
   await saveNow();
@@ -2753,7 +2787,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v27 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v28 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -3086,11 +3120,92 @@ function addPantry(){
   save(); render();
 }
 
-/* ----- setup ----- */
 const DIETS = ['Vegetarian','Vegan','Gluten-free','Dairy-free','Low-carb','Kid-friendly'];
+let onboardStep=0;
+function openOnboarding(step=0){
+  onboardStep=Math.max(0,Math.min(3,step));
+  renderOnboarding();
+  $('#onboarding').classList.add('show');
+  document.body.style.overflow='hidden';
+  setTimeout(()=>$('#onboarding').focus(),0);
+}
+function closeOnboarding(){
+  $('#onboarding').classList.remove('show');
+  document.body.style.overflow='';
+}
+async function skipOnboarding(){
+  S.onboardingDone=true;
+  await saveNow();
+  closeOnboarding();
+  toast('You can run the setup guide anytime');
+}
+function onboardNext(){ onboardStep=Math.min(3,onboardStep+1); renderOnboarding(); $('#onboarding').scrollTop=0; }
+function onboardBack(){ onboardStep=Math.max(0,onboardStep-1); renderOnboarding(); $('#onboarding').scrollTop=0; }
+function onboardDiet(i,d){
+  const a=S.household[i].diet||[];
+  const n=a.indexOf(d); if(n>=0)a.splice(n,1);else a.push(d);
+  S.household[i].diet=a; save(); renderOnboarding();
+}
+function onboardAddPerson(){ S.household.push({name:'',age:35,diet:[]}); save(); renderOnboarding(); }
+function onboardRemovePerson(i){ if(S.household.length>1){ S.household.splice(i,1); save(); renderOnboarding(); } }
+async function finishOnboarding(){
+  S.onboardingDone=true;
+  await saveNow();
+  closeOnboarding();
+  tab='plan'; render();
+  generateWeek();
+}
+function renderOnboarding(){
+  const el=$('#onboarding');
+  const progress=`<div class="onboard-progress" aria-label="Step ${onboardStep+1} of 4">${[0,1,2,3].map(i=>`<i class="${i<=onboardStep?'on':''}"></i>`).join('')}</div>`;
+  let body='';
+  if(onboardStep===0){
+    body=`<img class="onboard-hero" src="icons/home-hero.jpg" alt="A colorful family-style meal on a table">
+      <div class="onboard-kicker">A calmer dinner week</div>
+      <h1 class="onboard-title" id="onboardTitle">Let’s make WeekPlate yours.</h1>
+      <p class="onboard-copy">Answer a few quick questions and WeekPlate will build dinners around your household, schedule, budget, and preferred store.</p>
+      <div class="onboard-panel"><h3>What you’ll get</h3><p class="sub" style="margin:0">A ready-to-use meal plan, one priced shopping list, and less food left behind.</p></div>`;
+  } else if(onboardStep===1){
+    body=`<div class="onboard-kicker">Step 2 · Household</div>
+      <h1 class="onboard-title" id="onboardTitle">Who’s eating?</h1>
+      <p class="onboard-copy">Ages help size portions. Add dietary needs to the person they apply to.</p>
+      ${S.household.map((p,i)=>`<div class="onboard-panel">
+        <div class="row"><input class="pname" aria-label="Person ${i+1} name" placeholder="Person ${i+1}" maxlength="20" value="${esc(p.name||'')}" onchange="S.household[${i}].name=this.value;save()">
+        <select aria-label="${esc(personLabel(p,i))} age" onchange="S.household[${i}].age=+this.value;save();renderOnboarding()">${[2,5,8,11,14,17,25,35,50,70].map(a=>`<option value="${a}" ${nearAge(p.age,a)?'selected':''}>${a<=3?'0–3':a<=8?'4–8':a<=13?'9–13':a<=18?'14–18':a+' adult'}</option>`).join('')}</select>
+        ${S.household.length>1?`<button class="x" aria-label="Remove ${esc(personLabel(p,i))}" onclick="onboardRemovePerson(${i})">✕</button>`:''}</div>
+        <div class="factor" style="margin:7px 2px">${ageLabel(p.age)} · ${ageFactor(p.age)}× portion</div>
+        <div class="chiprow">${DIETS.map(d=>`<button class="chip mini ${(p.diet||[]).includes(d)?'on':''}" onclick="onboardDiet(${i},'${d}')">${d}</button>`).join('')}</div>
+      </div>`).join('')}
+      <button class="btn ghost" onclick="onboardAddPerson()">+ Add person</button>`;
+  } else if(onboardStep===2){
+    body=`<div class="onboard-kicker">Step 3 · Your week</div>
+      <h1 class="onboard-title" id="onboardTitle">How do you like to plan?</h1>
+      <p class="onboard-copy">These are easy to change later in Setup.</p>
+      <div class="onboard-panel"><h3>Dinners per week</h3><div class="stepper"><button onclick="S.dinners=Math.max(1,S.dinners-1);save();renderOnboarding()">−</button><span class="val">${S.dinners}</span><button onclick="S.dinners=Math.min(7,S.dinners+1);save();renderOnboarding()">+</button></div></div>
+      <div class="onboard-panel"><h3>Maximum time per dinner</h3><div class="seg">${[[30,'30 min'],[45,'45 min'],[60,'60 min']].map(([v,l])=>`<button class="${S.maxMinutes===v?'on':''}" onclick="S.maxMinutes=${v};save();renderOnboarding()">${l}</button>`).join('')}</div></div>
+      <div class="onboard-panel"><h3>Plan ahead</h3><div class="seg">${[[1,'1 week'],[2,'2 weeks']].map(([v,l])=>`<button class="${S.horizon===v?'on':''}" onclick="S.horizon=${v};save();renderOnboarding()">${l}</button>`).join('')}</div></div>
+      <div class="onboard-panel"><h3>Leftover nights per week</h3><div class="stepper"><button onclick="S.leftoverNights=Math.max(0,S.leftoverNights-1);save();renderOnboarding()">−</button><span class="val">${S.leftoverNights}</span><button onclick="S.leftoverNights=Math.min(3,S.leftoverNights+1);save();renderOnboarding()">+</button></div><p class="sub" style="margin:8px 0 0">Cook double once, take the next night off.</p></div>`;
+  } else {
+    const storeName=S.store==='walmart'?'Walmart':S.store==='aldi'?'Aldi':'Compare both';
+    body=`<div class="onboard-kicker">Step 4 · Final touches</div>
+      <h1 class="onboard-title" id="onboardTitle">Ready to build your week.</h1>
+      <p class="onboard-copy">Choose where you shop and add an optional weekly grocery target.</p>
+      <div class="onboard-panel"><h3>Preferred store</h3><div class="seg">${[['walmart','Walmart'],['aldi','Aldi'],['compare','Compare']].map(([v,l])=>`<button class="${S.store===v?'on':''}" onclick="S.store='${v}';save();renderOnboarding()">${l}</button>`).join('')}</div></div>
+      <div class="onboard-panel"><h3>Weekly grocery target</h3><div style="display:flex;align-items:center;gap:7px"><span class="mono" style="font-size:18px">$</span><input aria-label="Weekly grocery target" type="number" inputmode="numeric" min="0" step="5" value="${S.budgetCap||''}" placeholder="Optional" style="width:100%;padding:12px;border-radius:11px;border:1.5px solid var(--line);background:var(--card);font-weight:700" onchange="S.budgetCap=Math.max(0,parseInt(this.value)||0);save();renderOnboarding()"></div></div>
+      <div class="onboard-summary"><div><small>Household</small><b>${S.household.length} ${S.household.length===1?'person':'people'}</b></div><div><small>Plan</small><b>${S.dinners} dinners · ${S.horizon} ${S.horizon===1?'week':'weeks'}</b></div><div><small>Time</small><b>Up to ${S.maxMinutes} min</b></div><div><small>Store</small><b>${storeName}</b></div></div>`;
+  }
+  el.innerHTML=`<div class="onboard-in" tabindex="-1"><div class="onboard-top"><div class="onboard-brand">Week<span>Plate</span></div>${progress}<button class="onboard-skip" onclick="skipOnboarding()">Skip</button></div>${body}</div>
+    <div class="onboard-actions"><div class="onboard-actions-in">${onboardStep?'<button class="btn ghost back" onclick="onboardBack()">Back</button>':''}<button class="btn" onclick="${onboardStep===3?'finishOnboarding()':'onboardNext()'}">${onboardStep===0?'Get started':onboardStep===3?'Save & build my plan':'Continue'}</button></div></div>`;
+}
+
+/* ----- setup ----- */
 function viewSetup(){
   const tgt = targetServings();
   return `
+  <div class="card">
+    <div class="row" style="gap:14px"><div><h2 style="margin-bottom:4px">Setup guide</h2><p class="sub" style="margin:0">Walk through the essentials again anytime.</p></div><button class="chip" style="flex:none" onclick="openOnboarding(0)">Run guide</button></div>
+  </div>
+
   <div class="card">
     <h2>Who's eating</h2>
     <p class="sub">Names and ages set portions; each person's restrictions apply to <b>every</b> dinner. Plan scales to <b>${tgt} servings</b>.</p>
@@ -3276,6 +3391,7 @@ async function apiTest(){
 /* ================= boot ================= */
 (async ()=>{
   await loadState(); applyCustomRecipes(); render(); await checkSharedLink();
+  if(!S.onboardingDone && !new URLSearchParams(location.search).has('test')) setTimeout(()=>openOnboarding(0),0);
   if('serviceWorker' in navigator && location.protocol.startsWith('http')){
     navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
   }
