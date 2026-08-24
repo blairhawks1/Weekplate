@@ -383,7 +383,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v28</span></h1>
+    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v29</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -2787,7 +2787,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v28 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v29 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -3155,6 +3155,14 @@ async function finishOnboarding(){
   tab='plan'; render();
   generateWeek();
 }
+async function resetForOnboardingTest(){
+  if(!confirm('Start over as a brand-new user? This permanently clears this device’s plans, history, pantry, prices, recipes, photos, and settings. Export a backup first if you may want them back.')) return;
+  S=JSON.parse(JSON.stringify(DEFAULTS));
+  mem.state=S;
+  const ok=await saveNow();
+  if(!ok){ toast('Could not reset saved data'); return; }
+  location.reload();
+}
 function renderOnboarding(){
   const el=$('#onboarding');
   const progress=`<div class="onboard-progress" aria-label="Step ${onboardStep+1} of 4">${[0,1,2,3].map(i=>`<i class="${i<=onboardStep?'on':''}"></i>`).join('')}</div>`;
@@ -3355,6 +3363,11 @@ function viewSetup(){
     <button class="btn ghost" style="margin-top:10px" onclick="saveNow().then(ok=>{render();toast(ok?'Saved':'Save failed — export a backup')})">Save now</button>
     ${Object.keys(S.photos||{}).length? `<p class="sub" style="margin:10px 0 0">📷 ${Object.keys(S.photos).length} meal photo${Object.keys(S.photos).length>1?'s':''} saved (${Math.round(photoBytes()/1024)} KB). <button style="color:var(--danger);text-decoration:underline;font-size:12px" onclick="if(confirm('Delete all meal photos?')){S.photos={};saveNow().then(()=>render());}">Delete all photos</button></p>`:''}
     <p class="sub" style="margin:12px 0 0"><b>Sharing with family:</b> use “Send this plan to another phone” on the Plan tab. Each phone keeps its own pantry, prices, and check-offs — nothing you do affects theirs.</p>
+    <details style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">
+      <summary class="sub" style="cursor:pointer;font-size:12px">Testing tools</summary>
+      <p class="sub" style="font-size:12px;margin:10px 0">Return this device to a completely fresh state and show onboarding again. This cannot be undone without a backup.</p>
+      <button class="chip" style="color:var(--danger);border-color:var(--danger)" onclick="resetForOnboardingTest()">Clear data &amp; test as new user</button>
+    </details>
   </div>
 
   <p class="sub" style="text-align:center;padding:6px 20px">💡 In Safari, tap Share → <b>Add to Home Screen</b> to use WeekPlate like a native app. ${S.weeksDone? `Weeks completed: ${S.weeksDone}.`:''}</p>`;
