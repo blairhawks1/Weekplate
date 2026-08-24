@@ -2,7 +2,9 @@
 
 **What it is:** a single-file, offline-first meal-planning web app. One `index.html` containing all HTML, CSS, JS, a 150-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
 
-**Current version:** v34 (shown as a badge next to the logo, and in the Guide footer).
+**Current version:** v35 (shown as a badge next to the logo, and in the Guide footer).
+
+**v35:** added an on-device end-of-week feedback loop. Each dinner can be rated loved, okay, or don't repeat, with notes for time, cost, portion size, and leftover quality. The planner uses this feedback to promote favorites, block rejected meals, learn realistic timing and quantities, deprioritize expensive choices, and avoid poor reheaters on leftover nights.
 
 **v34:** expanded the complete offline recipe library from 100 to 150 dinners. All 50 additions include directions, planner tags, pricing-compatible ingredients, and nutrition coverage, with broader quick-night, family, seafood, meat, vegetarian, and vegan choices.
 

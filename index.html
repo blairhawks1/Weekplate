@@ -403,7 +403,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v34</span></h1>
+    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v35</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -438,6 +438,7 @@ const DEFAULTS = {
   weeksDone:0,
   favorites:[],               // recipe titles to favor
   blocked:[],                 // recipe titles to never show
+  mealFeedback:{},            // recipe title -> latest family rating and learned adjustments
   history:[],                 // last weeks: [{weekOf, titles, servings}]
   leftoverNights:0,           // cook-double nights per week (0-3)
   budgetCap:0,                // $/week target, 0 = off
@@ -501,6 +502,7 @@ function migrate(){
   S.nightLimits=S.nightLimits||{};
   S.allergens=typeof S.allergens==='string'?S.allergens:'';
   S.favorites=S.favorites||[]; S.blocked=S.blocked||[]; S.history=S.history||[];
+  S.mealFeedback=S.mealFeedback||{};
   if(S.week && typeof S.week.planApproved==='undefined') S.week.planApproved=true;
   S.pantry=(S.pantry||[]).map(p=>Object.assign({addedAt:null,useBy:null},p));
   // v24: the unauthenticated browser-only AI path could never work safely.
@@ -1171,13 +1173,13 @@ function libPool(){  // time + dislikes only; diets handled per person
   let pool = [];
   for(let relax=0; relax<=3 && pool.length<S.dinners; relax++){
     const lim = relax<3 ? S.maxMinutes + relax*15 : 999;
-    pool = RECIPES.filter(r=> r.m<=lim && passesAvoid(r, avoid) && !(S.blocked||[]).includes(r.t));
+    pool = RECIPES.filter(r=> effectiveMinutes(r)<=lim && passesAvoid(r, avoid) && !(S.blocked||[]).includes(r.t));
   }
   return pool;
 }
 function altPoolFor(p){  // recipes fully safe for this person
   const avoid = avoidList();
-  return RECIPES.filter(r=> r.m<=S.maxMinutes+15 && passesAvoid(r, avoid) && !violatesPerson(r,p) && !(S.blocked||[]).includes(r.t));
+  return RECIPES.filter(r=> effectiveMinutes(r)<=S.maxMinutes+15 && passesAvoid(r, avoid) && !violatesPerson(r,p) && !(S.blocked||[]).includes(r.t));
 }
 function libPlan(){ libBuild(null); }
 function libReshuffle(){
@@ -1281,6 +1283,8 @@ function libBuild(fixed, keepWeekOf, avoidTitles){
       s += Math.min(pb, 12);
       restricted.forEach(p=>{ if(violatesPerson(r,p)) s -= 0.8; });
       if(S.lastTitles.includes(r.t)) s -= 6;
+      const fb=(S.mealFeedback||{})[r.t];
+      if(fb){ if(fb.rating==='love')s+=5; if(fb.rating==='no')s-=20; if(fb.tooExpensive)s-=2.5; }
       if(favActive.has(r.t)) s += 8;
       else if((S.favorites||[]).includes(r.t)) s -= 2.5;
       if(lockedTitles.includes(r.t)) s -= 20;
@@ -1394,10 +1398,11 @@ function rescaleRecipe(rec, newServings){
   rec.ingredients = src.ing.map(([nm,q,u])=>({name:nm, qty:round2(q*scale), unit:u, category:PRICES[nm].cat}));
 }
 function libRecipeObj(r, day, scale){
+  const fb=(S.mealFeedback||{})[r.t]||{}, pf=fb.portionFactor||1, mins=effectiveMinutes(r);
   return { day, title:r.t, source:'built-in library', url:null, steps:STEPS[r.t]||[],
-    prepMin:Math.round(r.m*0.35), cookMin:r.m-Math.round(r.m*0.35),
+    prepMin:Math.round(mins*0.35), cookMin:mins-Math.round(mins*0.35),
     summary:'', servings:round2(scale*4),
-    ingredients: r.ing.map(([nm,q,u])=>({name:nm, qty:round2(q*scale), unit:u, category:PRICES[nm].cat})) };
+    ingredients: r.ing.map(([nm,q,u])=>({name:nm, qty:round2(q*scale*pf), unit:u, category:PRICES[nm].cat})) };
 }
 function libPrice(items){
   items.forEach(it=>{
@@ -1433,7 +1438,7 @@ function libSwap(i, maxOverride){
     restricted.forEach(p=>{ if(violatesPerson(src,p)) off.set(p, off.get(p)+sp); });
   });
   const allow = new Map(); restricted.forEach(p=> allow.set(p, altPoolFor(p).length ? (S.altNights??2) : 0));
-  let pool = libPool().filter(r=> (!maxOverride || r.m<=maxOverride) && !used.includes(r.t)
+  let pool = libPool().filter(r=> (!maxOverride || effectiveMinutes(r)<=maxOverride) && !used.includes(r.t)
     && restricted.every(p=> !violatesPerson(r,p) || off.get(p)+span <= allow.get(p)));
   if(oldRec.double){
     const dpool = pool.filter(r=> reheatsWell(r.t) && restricted.every(p=>!violatesPerson(r,p)));
@@ -1605,8 +1610,42 @@ function consolidate(recipes){
   return items;
 }
 
-/* finish week: leftovers -> pantry */
+/* finish week: collect feedback, then leftovers -> pantry */
 function finishWeek(){
+  if(!S.week) return;
+  const rows=S.week.recipes.map((r,i)=>`<div class="onboard-panel">
+    <h3>${esc(r.title)}</h3><div class="qty" style="margin-bottom:9px">${esc(r.day)} · ${(r.prepMin||0)+(r.cookMin||0)} min${r.double?' · leftovers too':''}</div>
+    <label class="frmlbl">How was it?<select id="fbr${i}" style="width:100%;margin-top:5px;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:var(--card)"><option value="">No rating</option><option value="love">Loved it</option><option value="okay">It was okay</option><option value="no">Don’t repeat</option></select></label>
+    <div class="chiprow" style="margin-top:10px"><label class="chip"><input type="checkbox" id="fbl${i}"> Took longer</label><label class="chip"><input type="checkbox" id="fbe${i}"> Too expensive</label>${r.double?`<label class="chip"><input type="checkbox" id="fbh${i}"> Reheated poorly</label>`:''}</div>
+    <label class="frmlbl" style="margin-top:10px">Portion size<select id="fbp${i}" style="width:100%;margin-top:5px;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:var(--card)"><option value="right">About right</option><option value="small">Needed more</option><option value="large">Made too much</option></select></label>
+  </div>`).join('');
+  $('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Not yet</button></div><div class="day">End-of-week check-in</div><h2 class="disp" style="font-size:22px">Help next week fit better</h2><p class="sub">A few quick notes teach WeekPlate what your family likes. Skip any meal you don’t want to rate.</p>${rows}<button class="btn" onclick="submitWeekFeedback()">Save feedback &amp; finish week</button><button class="btn ghost" style="margin-top:9px" onclick="closeSheet();completeWeek()">Skip feedback</button></div>`;
+  $('#sheet').classList.add('show'); $('#sheet').scrollTop=0;
+}
+function submitWeekFeedback(){
+  if(!S.week) return;
+  S.mealFeedback=S.mealFeedback||{};
+  S.week.recipes.forEach((r,i)=>{
+    const rating=$(`#fbr${i}`).value, tookLong=$(`#fbl${i}`).checked, tooExpensive=$(`#fbe${i}`).checked;
+    const portion=$(`#fbp${i}`).value, reheatPoor=r.double&&$(`#fbh${i}`)?.checked;
+    if(!rating&&!tookLong&&!tooExpensive&&portion==='right'&&!reheatPoor) return;
+    const src=RECIPES.find(x=>x.t===r.title), old=S.mealFeedback[r.title]||{};
+    const fb={rating:rating||old.rating||'',tooExpensive,reheatPoor:!!reheatPoor,updatedAt:Date.now(),portionFactor:portion==='small'?1.15:(portion==='large' ? 0.9 : 1)};
+    if(tookLong&&src) fb.learnedMinutes=Math.max(old.learnedMinutes||0,src.m+10);
+    else if(old.learnedMinutes) fb.learnedMinutes=old.learnedMinutes;
+    S.mealFeedback[r.title]=fb;
+    if(rating==='love'){
+      if(!S.favorites.includes(r.title)) S.favorites.push(r.title);
+      S.blocked=S.blocked.filter(t=>t!==r.title);
+    }
+    if(rating==='no'){
+      if(!S.blocked.includes(r.title)) S.blocked.push(r.title);
+      S.favorites=S.favorites.filter(t=>t!==r.title);
+    }
+  });
+  closeSheet(); completeWeek();
+}
+function completeWeek(){
   if(!S.week) return;
   const w = S.week;
   // consume pantry that was used
@@ -2054,7 +2093,12 @@ function macroOK(src, tol){ // per-dinner mode check with tolerance multiplier
   if(m.fat>0 && n.fat > m.fat*tol) return false;
   return true;
 }
+function effectiveMinutes(src){
+  const fb=(S.mealFeedback||{})[src.t]||{};
+  return Math.max(src.m,Number(fb.learnedMinutes)||0);
+}
 function reheatsWell(title){
+  if(((S.mealFeedback||{})[title]||{}).reheatPoor) return false;
   return /soup|stew|chili|casserole|lasagna|ziti|bake|baked|curry|meatlo|enchilada|pot pie|minestrone|stroganoff|masala|marinara|bolognese/i.test(title);
 }
 
@@ -2929,7 +2973,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v34 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v35 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -3569,6 +3613,12 @@ function viewSetup(){
         </span>
       </div>`).join('')}</div>
     </details>
+  </div>
+
+  <div class="card">
+    <h2>Meal learning</h2>
+    <p class="sub">WeekPlate learns from your end-of-week check-ins: loved meals appear more often, “don’t repeat” meals stay out, and time, cost, portions, and leftover quality shape future plans.</p>
+    <div class="row"><span class="sub" style="margin:0">${Object.keys(S.mealFeedback||{}).length} recipe${Object.keys(S.mealFeedback||{}).length===1?'':'s'} learned</span>${Object.keys(S.mealFeedback||{}).length?`<button class="chip" onclick="if(confirm('Clear all learned meal feedback? Favorites and blocked meals stay as they are.')){S.mealFeedback={};save();render();toast('Meal learning cleared')}" style="font-size:12px">Clear learning</button>`:''}</div>
   </div>
 
   ${(S.history&&S.history.length)? `<div class="card">
