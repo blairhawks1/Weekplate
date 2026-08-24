@@ -408,7 +408,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v36</span></h1>
+    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v37</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -444,6 +444,7 @@ const DEFAULTS = {
   favorites:[],               // recipe titles to favor
   blocked:[],                 // recipe titles to never show
   mealFeedback:{},            // recipe title -> latest family rating and learned adjustments
+  planTemplates:[],           // reusable named meal schedules
   history:[],                 // last weeks: [{weekOf, titles, servings}]
   leftoverNights:0,           // cook-double nights per week (0-3)
   budgetCap:0,                // $/week target, 0 = off
@@ -508,6 +509,7 @@ function migrate(){
   S.allergens=typeof S.allergens==='string'?S.allergens:'';
   S.favorites=S.favorites||[]; S.blocked=S.blocked||[]; S.history=S.history||[];
   S.mealFeedback=S.mealFeedback||{};
+  S.planTemplates=S.planTemplates||[];
   if(S.week && typeof S.week.planApproved==='undefined') S.week.planApproved=true;
   S.pantry=(S.pantry||[]).map(p=>Object.assign({addedAt:null,useBy:null},p));
   // v24: the unauthenticated browser-only AI path could never work safely.
@@ -2981,10 +2983,14 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v36 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v37 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
+function templatePanel(){
+  const t=S.planTemplates||[];if(!t.length)return '';
+  return `<div class="card"><div class="row"><div><h2>Saved plan templates</h2><p class="sub" style="margin:3px 0 0">Reuse a favorite week without rebuilding it.</p></div><span class="pill leaf">${t.length}</span></div>${t.map((x,i)=>`<div class="pitem"><span class="nm">${esc(x.name)}<br><span class="qty">${x.items.length} cooked meal${x.items.length===1?'':'s'} · ${x.horizon||1} week${(x.horizon||1)>1?'s':''}${(x.manual||[]).length?` · ${x.manual.length} added grocer${x.manual.length===1?'y':'ies'}`:''}</span></span><button class="chip on" onclick="loadPlanTemplate(${i})">Use</button><button class="x" aria-label="Delete ${esc(x.name)}" onclick="deletePlanTemplate(${i})">✕</button></div>`).join('')}</div>`;
+}
 function viewPlan(){
   let h = '';
   if(lastErr){ h += `<div class="err"><b>Couldn't finish planning:</b> ${esc(lastErr)}<br>Tap the button to retry — it resumes from scratch and falls back to offline estimates if search is blocked.</div>`; lastErr=null; }
@@ -3011,7 +3017,7 @@ function viewPlan(){
         <div class="howstep"><i>3</i><b>Waste less</b><span>Uses pantry food before its use-by date.</span></div>
       </div>
       <div class="homesetup"><button onclick="tab='setup';render();document.getElementById('main').focus()">Adjust household and planning settings</button></div>
-    </div>`;
+    </div>${templatePanel()}`;
     return h;
   }
   const w = S.week;
@@ -3095,9 +3101,38 @@ function viewPlan(){
   h += `<button class="btn ghost" style="margin-top:10px" onclick="makePDF()">🖨 Print ${((w.horizon||1)>1)?'2 weeks':'week'} to PDF</button>
         <button class="btn ghost" style="margin-top:10px" onclick="exportForPDF()">📋 Get PDF via Claude chat</button>`;
   if(w.mode==='lib') h += `<button class="btn ghost" style="margin-top:10px" onclick="libReshuffle()">↻ Reshuffle unlocked dinners</button>`;
+  h += `<button class="btn ghost" style="margin-top:10px" onclick="openSavePlanTemplate()">☆ Save this plan as a template</button>`;
+  h += templatePanel();
   h += `<button class="btn warn" style="margin-top:10px" onclick="finishWeek()">✓ Finish ${((w.horizon||1)>1)?'both weeks':'week'} — save leftovers to pantry</button>
         <button class="btn ghost" style="margin-top:10px" onclick="if(confirm('Discard this plan?')){S.week=null;save();render();}">Discard plan</button>`;
   return h;
+}
+
+function openSavePlanTemplate(){
+  if(!S.week)return;
+  $('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Close</button></div><div class="day">Save plan template</div><h2 class="disp" style="font-size:22px">Reuse this week anytime</h2><p class="sub">Saves meals, assigned days, leftover pairings, servings, and manually added groceries. Pantry deductions and checked-off items are not saved.</p><label class="frmlbl">Template name<input id="tplName" maxlength="40" placeholder="e.g. Busy school week" style="width:100%;margin-top:6px;padding:12px;border:1.5px solid var(--line);border-radius:11px;background:var(--card)"></label><button class="btn" style="margin-top:14px" onclick="savePlanTemplate()">Save template</button></div>`;
+  $('#sheet').classList.add('show');$('#sheet').scrollTop=0;setTimeout(()=>$('#tplName')?.focus(),50);
+}
+function savePlanTemplate(){
+  const name=$('#tplName').value.trim();if(!name){toast('Enter a template name');return;}
+  const w=S.week, tpl={name,createdAt:Date.now(),horizon:w.horizon||1,dinners:S.dinners,servings:w.servings,maxMinutes:S.maxMinutes,budgetCap:S.budgetCap,leftoverNights:S.leftoverNights,store:S.store,nightLimits:JSON.parse(JSON.stringify(S.nightLimits||{})),items:w.recipes.map(r=>({title:r.title,day:r.day,week:r.week||1,servings:r.servings||w.servings,double:!!r.double,leftoverDay:r.leftoverDay||'',leftoverWeek:r.leftoverWeek||r.week||1})),manual:JSON.parse(JSON.stringify((w.shopping||[]).filter(i=>i.manual).map(i=>({name:i.name,need:i.need,gross:i.need,unit:i.unit,category:i.category,usedBy:[],fromPantry:0,manual:true,note:i.note||'',done:false}))))};
+  const at=(S.planTemplates||[]).findIndex(x=>x.name.toLowerCase()===name.toLowerCase());
+  if(at>=0){if(!confirm(`Replace the saved template “${name}”?`))return;S.planTemplates[at]=tpl;}else S.planTemplates.push(tpl);
+  save();closeSheet();render();toast('Plan template saved');
+}
+function loadPlanTemplate(i){
+  const t=(S.planTemplates||[])[i];if(!t)return;
+  const missing=t.items.filter(x=>!RECIPES.some(r=>r.t===x.title));if(missing.length){toast('A recipe in this template is no longer available');return;}
+  const unsafe=t.items.filter(x=>{const r=RECIPES.find(z=>z.t===x.title);return !passesAvoid(r,avoidList());});
+  if(unsafe.length){toast(`Template conflicts with current allergens or dislikes: ${unsafe[0].title}`);return;}
+  if(S.week&&!confirm(`Replace the current plan with “${t.name}”?`))return;
+  S.horizon=t.horizon||1;S.dinners=t.dinners||Math.min(7,t.items.length);S.maxMinutes=t.maxMinutes||S.maxMinutes;S.budgetCap=t.budgetCap||0;S.leftoverNights=t.leftoverNights||0;S.store=t.store||S.store;S.nightLimits=JSON.parse(JSON.stringify(t.nightLimits||{}));
+  const recipes=t.items.map(x=>{const src=RECIPES.find(r=>r.t===x.title),rec=libRecipeObj(src,x.day,(x.servings||t.servings||targetServings())/4);rec.week=x.week||1;if(x.double){rec.double=true;rec.leftoverDay=x.leftoverDay;rec.leftoverWeek=x.leftoverWeek||x.week||1;}return rec;});
+  S.week=null;finalizeWeek(recipes,new Date().toISOString().slice(0,10),false);
+  (t.manual||[]).forEach(m=>S.week.shopping.push(JSON.parse(JSON.stringify(m))));libPrice(S.week.shopping);S.week.planApproved=false;save();tab='plan';render();toast(`Loaded ${t.name}`);
+}
+function deletePlanTemplate(i){
+  const t=(S.planTemplates||[])[i];if(!t||!confirm(`Delete the template “${t.name}”?`))return;S.planTemplates.splice(i,1);save();render();toast('Template deleted');
 }
 
 function setMealServings(i, delta){

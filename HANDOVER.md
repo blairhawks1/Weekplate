@@ -2,7 +2,9 @@
 
 **What it is:** a single-file, offline-first meal-planning web app. One `index.html` containing all HTML, CSS, JS, a 150-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
 
-**Current version:** v36 (shown as a badge next to the logo, and in the Guide footer).
+**Current version:** v37 (shown as a badge next to the logo, and in the Guide footer).
+
+**v37:** added named, reusable plan templates. Templates preserve meals, assigned days and weeks, servings, cook-double pairings, nightly limits, store and budget settings, and manually added groceries. Loading rebuilds current prices and alternates while refusing plans that conflict with current allergens or dislikes.
 
 **v36:** added a searchable Recipes tab with household-safety, time, dietary, favorite, cost, pantry-match, and learned-rating tools, plus direct replacement of meals in the current plan. The shopping list is now editable: users can add household groceries, change quantities, attach notes, and remove manually added items without losing them when the plan is recalculated.
 
