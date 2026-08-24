@@ -214,6 +214,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;heigh
 .savebadge{margin:10px 18px 6px;padding:9px 12px;border-radius:10px;background:var(--leaf-bg);
   color:var(--spruce-deep);font-size:13px;font-weight:700;text-align:center}
 .catlabel{grid-column:1/-1;padding:9px 0 3px;font-size:10.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--squash)}
+.groceryedit{font-size:10.5px;color:var(--spruce);font-weight:800;text-decoration:underline;margin-left:5px}
+.recipecard{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
+.recipecard h3{margin:0 0 4px;font-size:16px;color:var(--spruce-deep)}
+.recipecard .meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.recipefilters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.recipefilters input{grid-column:1/-1}.recipefilters input,.recipefilters select{padding:11px;border:1.5px solid var(--line);border-radius:11px;background:var(--card);font-size:14px;min-width:0}
 
 /* ---------- pantry ---------- */
 .pitem{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}
@@ -403,7 +408,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v35</span></h1>
+    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v36</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -1383,7 +1388,8 @@ function finalizeWeek(mains, keepWeekOf, wasReshuffle){
     rec.altFor = name; rec.altServes = servings; rec.nights = nights;
     alts.push({person:name, nights, rec});
   });
-  const shopping = consolidate(mains.concat(alts.map(a=>a.rec)));
+  const manual=(S.week?.shopping||[]).filter(i=>i.manual);
+  const shopping = consolidate(mains.concat(alts.map(a=>a.rec))).concat(manual);
   libPrice(shopping);
   S.week = { recipes:mains, alts, shopping, weekOf: keepWeekOf || new Date().toISOString().slice(0,10),
              servings:tgt, mode:'lib', horizon:Math.max(1,Math.min(2,S.horizon||1)), planApproved:false };
@@ -2819,11 +2825,12 @@ const ICONS = {
   plan:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>',
   list:'<svg viewBox="0 0 24 24"><path d="M4 7h2M4 12h2M4 17h2M10 7h10M10 12h10M10 17h10"/></svg>',
   pantry:'<svg viewBox="0 0 24 24"><path d="M5 3h14v18H5zM5 12h14M12 3v18M8 7v2M8 16v2M16 7v2M16 16v2"/></svg>',
+  recipes:'<svg viewBox="0 0 24 24"><path d="M4 11h16M6 11a6 6 0 0 1 12 0M5 11l2 9h10l2-9M12 3v2"/></svg>',
   setup:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.06-.4.1-.8.1-1.2z"/></svg>',
   help:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.2a2.8 2.8 0 0 1 5.5.8c0 1.9-2.8 2.5-2.8 2.5"/><path d="M12 17h.01"/></svg>'
 };
 function renderNav(){
-  const tabs = [['plan','Plan'],['list','Shopping'],['pantry','Pantry'],['setup','Setup'],['help','Guide']];
+  const tabs = [['plan','Plan'],['recipes','Recipes'],['list','Shopping'],['pantry','Pantry'],['setup','Setup'],['help','Guide']];
   $('#nav').innerHTML = tabs.map(([k,l])=>
     `<button class="${tab===k?'on':''}" ${tab===k?'aria-current="page"':''} aria-label="${l}" onclick="tab='${k}';render();document.getElementById('main').focus()">${ICONS[k]}<span>${l}</span><span class="dot"></span></button>`).join('');
 }
@@ -2833,6 +2840,7 @@ function render(){
   $('#weekLabel').textContent = S.week ? `Week of ${S.week.weekOf} · ${S.week.servings} servings/dinner` : `${targetServings()} servings per dinner`;
   const m = $('#main');
   if(tab==='plan') m.innerHTML = viewPlan();
+  else if(tab==='recipes') m.innerHTML = viewRecipes();
   else if(tab==='list') m.innerHTML = viewList();
   else if(tab==='pantry') m.innerHTML = viewPantry();
   else if(tab==='help') m.innerHTML = viewHelp();
@@ -2973,7 +2981,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v35 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v36 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -3101,7 +3109,8 @@ function setMealServings(i, delta){
 }
 function rebuildWeekShopping(){
   if(!S.week) return;
-  S.week.shopping=consolidate(S.week.recipes.concat((S.week.alts||[]).map(a=>a.rec)));
+  const manual=(S.week.shopping||[]).filter(i=>i.manual);
+  S.week.shopping=consolidate(S.week.recipes.concat((S.week.alts||[]).map(a=>a.rec))).concat(manual);
   libPrice(S.week.shopping);
 }
 function approvePlan(){
@@ -3284,6 +3293,48 @@ function openSheetFor(r, headline){
   $('#sheet').scrollTop = 0;
 }
 
+/* ----- recipe library ----- */
+let recipeBrowseFilter='all', recipeBrowseSort='match';
+function viewRecipes(){
+  let list=RECIPES.slice();
+  if(recipeBrowseFilter==='quick') list=list.filter(r=>effectiveMinutes(r)<=30);
+  if(recipeBrowseFilter==='favorites') list=list.filter(r=>(S.favorites||[]).includes(r.t));
+  if(recipeBrowseFilter==='vegetarian') list=list.filter(r=>r.tags.includes('vegetarian'));
+  if(recipeBrowseFilter==='family') list=list.filter(r=>r.tags.includes('kid'));
+  if(recipeBrowseFilter==='safe') list=list.filter(r=>passesAvoid(r,avoidList())&&S.household.every(p=>!violatesPerson(r,p)));
+  const pantryScore=r=>r.ing.filter(([n])=>S.pantry.some(p=>normName(p.name)===normName(n))).length;
+  if(recipeBrowseSort==='time') list.sort((a,b)=>effectiveMinutes(a)-effectiveMinutes(b));
+  else if(recipeBrowseSort==='cost') list.sort((a,b)=>recipeCost4(a)-recipeCost4(b));
+  else if(recipeBrowseSort==='pantry') list.sort((a,b)=>pantryScore(b)-pantryScore(a));
+  else if(recipeBrowseSort==='rating') list.sort((a,b)=>((S.mealFeedback||{})[b.t]?.rating==='love'?1:0)-((S.mealFeedback||{})[a.t]?.rating==='love'?1:0));
+  else list.sort((a,b)=>a.t.localeCompare(b.t));
+  return `<div class="row"><div><h2 style="margin:2px 0">Recipes</h2><p class="sub" style="margin:2px 0">Browse all ${RECIPES.length} offline dinners</p></div><span class="pill leaf" id="recipeCount">${list.length}</span></div>
+    <div class="recipefilters"><input id="recipeSearch" type="search" placeholder="Search recipes or ingredients" oninput="filterRecipeCards(this.value)"><select onchange="recipeBrowseFilter=this.value;render()">${[['all','All recipes'],['quick','30 min or less'],['favorites','Favorites'],['family','Kid-friendly'],['vegetarian','Vegetarian'],['safe','Fits everyone']].map(([v,l])=>`<option value="${v}" ${recipeBrowseFilter===v?'selected':''}>${l}</option>`).join('')}</select><select onchange="recipeBrowseSort=this.value;render()">${[['match','A–Z'],['time','Shortest time'],['cost','Lowest cost'],['pantry','Best pantry match'],['rating','Family loves']].map(([v,l])=>`<option value="${v}" ${recipeBrowseSort===v?'selected':''}>${l}</option>`).join('')}</select></div>
+    <div id="recipeResults">${list.map(r=>{const safe=passesAvoid(r,avoidList())&&S.household.every(p=>!violatesPerson(r,p)),fb=(S.mealFeedback||{})[r.t],ps=pantryScore(r);return `<div class="card recipecard" data-search="${esc((r.t+' '+r.ing.map(x=>x[0]).join(' ')).toLowerCase())}"><div><h3>${esc(r.t)} ${(S.favorites||[]).includes(r.t)?'♥':''}</h3><p class="sub" style="margin:0">${effectiveMinutes(r)} min · about ${money(recipeCost4(r))} for 4${ps?` · ${ps} pantry match${ps>1?'es':''}`:''}</p><div class="meta"><span class="pill ${safe?'leaf':'sq'}">${safe?'Fits household':'Check restrictions'}</span>${fb?.rating==='love'?'<span class="pill leaf">Family loves</span>':''}${r.tags.includes('vegetarian')?'<span class="pill est">Vegetarian</span>':''}</div></div><button class="chip" onclick="openLibraryRecipe('${esc(r.t).replace(/'/g,"\\'")}')">View</button></div>`}).join('')}</div>`;
+}
+function filterRecipeCards(q){
+  q=String(q||'').trim().toLowerCase(); let n=0;
+  document.querySelectorAll('#recipeResults .recipecard').forEach(el=>{const show=!q||el.dataset.search.includes(q);el.style.display=show?'grid':'none';if(show)n++;});
+  const c=$('#recipeCount');if(c)c.textContent=n;
+}
+function openLibraryRecipe(title){
+  const src=RECIPES.find(r=>r.t===title);if(!src)return;
+  const rec=libRecipeObj(src,'',targetServings()/4);
+  openSheetFor(rec,`${effectiveMinutes(src)} min · about ${money(recipeCost4(src))} for 4`);
+  if(S.week) $('#sheet .sheet-in').insertAdjacentHTML('beforeend',`<button class="btn" style="margin-top:10px" onclick="choosePlanMeal('${esc(title).replace(/'/g,"\\'")}')">Add to current plan</button>`);
+}
+function choosePlanMeal(title){
+  const rows=S.week.recipes.map((r,i)=>`<button class="btn ghost" style="margin:7px 0;justify-content:space-between" onclick="replacePlanMeal(${i},'${esc(title).replace(/'/g,"\\'")}')"><span>${esc(r.day)}</span><span style="font-size:12px;font-weight:500">Replace ${esc(r.title)}</span></button>`).join('');
+  $('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Close</button></div><div class="day">Add to plan</div><h2 class="disp" style="font-size:21px">${esc(title)}</h2><p class="sub">Choose the dinner this recipe should replace.</p>${rows}</div>`;$('#sheet').scrollTop=0;
+}
+function replacePlanMeal(i,title){
+  const src=RECIPES.find(r=>r.t===title),old=S.week?.recipes[i];if(!src||!old)return;
+  if(S.week.recipes.some((r,x)=>x!==i&&r.title===title)){toast('That recipe is already in this plan');return;}
+  const rec=libRecipeObj(src,old.day,(old.servings||S.week.servings)/4);rec.week=old.week||1;
+  if(old.double){rec.double=true;rec.leftoverDay=old.leftoverDay;rec.leftoverWeek=old.leftoverWeek;}
+  S.week.recipes[i]=rec;finalizeWeek(S.week.recipes,S.week.weekOf,false);closeSheet();tab='plan';render();toast('Recipe added to plan');
+}
+
 /* ----- shopping list ----- */
 function viewList(){
   if(!S.week) return `<div class="empty"><div class="big">🧾</div><p>No plan yet.</p><p>Build this week's plan first — the priced shopping list appears here.</p></div>`;
@@ -3309,7 +3360,7 @@ function viewList(){
     if(it.category!==cat){ cat = it.category; catRow = `<div class="catlabel">${esc(aisleLabel[cat]||cat)}</div>`; }
     return catRow + `<div class="ritem ${it.done?'done':''}">
       <div class="nm"><input type="checkbox" ${it.done?'checked':''} onchange="S.week.shopping[${w.shopping.indexOf(it)}].done=this.checked;save();this.closest('.ritem').classList.toggle('done',this.checked)">
-        <span>${esc(it.name)}<small>${it.packs}× ${esc(it.pkg||'')} · need ${round2(it.need)} ${esc(it.unit)}${it.fromPantry>0?` · ${round2(it.fromPantry)} from pantry`:''}${it.leftover>0.01?` · <b>${round2(it.leftover)} ${esc(it.unit)} left over</b>`:''}</small></span></div>
+        <span>${esc(it.name)} <button class="groceryedit" onclick="openGroceryEdit(${w.shopping.indexOf(it)})">Edit</button><small>${it.packs}× ${esc(it.pkg||'')} · need ${round2(it.need)} ${esc(it.unit)}${it.fromPantry>0?` · ${round2(it.fromPantry)} from pantry`:''}${it.leftover>0.01?` · <b>${round2(it.leftover)} ${esc(it.unit)} left over</b>`:''}${it.note?`<br>📝 ${esc(it.note)}`:''}</small></span></div>
       <div class="pr mono ${bw?'best':''}">${money(wl)}</div>
       <div class="pr mono ${ba?'best':''}">${money(al)}</div>
     </div>`;
@@ -3317,6 +3368,7 @@ function viewList(){
   return `
   <button class="btn" onclick="openShopMode()">🛒 Shop mode — ${items.length-doneCount} item${items.length-doneCount!==1?'s':''} to get</button>
   <p class="sub" style="text-align:center;margin:8px 0 2px">Big tap targets, aisle order, screen stays awake${doneCount?` · ${doneCount} already in cart`:''}</p>
+  <div class="card"><h2>Add grocery item</h2><p class="sub">Add household items that aren’t part of a recipe.</p><div class="addrow"><input id="gin" placeholder="Item"><input id="giq" class="small" placeholder="Qty" inputmode="decimal"><input id="giu" class="small" placeholder="Unit"><button onclick="addGroceryItem()" aria-label="Add grocery">+</button></div><input id="gino" placeholder="Optional note" style="width:100%;margin-top:8px;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:var(--card)"></div>
   ${pantryHits.length? `<div class="card carry"><h2>♻️ From your pantry (don't buy)</h2>
     <p class="sub" style="margin:6px 0 0">${pantryHits.map(it=>`${round2(it.fromPantry)} ${esc(it.unit)} ${esc(it.name)}`).join(' · ')}</p></div>`:''}
   <div class="receipt">
@@ -3336,6 +3388,23 @@ function viewList(){
   <button class="btn ghost" style="margin-top:12px" onclick="shareList()">Share / copy shopping list</button>
   <p class="sub" style="padding:0 6px">${items.every(it=>it.userPriced)? 'Prices are from your saved receipts.' : (items.some(it=>it.userPriced)? 'Mix of your receipt prices and built-in estimates (estimates marked ~).' : 'Prices are built-in estimates — scan a receipt in the Pantry tab for real local prices.')} Per-dinner ≈ <b class="mono">${money(tBest/Math.max(1,w.recipes.reduce((s,r)=>s+(r.double?2:1),0)))}</b>.</p>`;
 }
+function addGroceryItem(){
+  const name=$('#gin').value.trim(),need=Math.max(.01,parseFloat($('#giq').value)||1),unit=$('#giu').value.trim()||'count',note=$('#gino').value.trim();
+  if(!name){toast('Enter an item name');return;}
+  const base=PRICES[normName(name)];
+  const it={name,need,gross:need,unit,category:base?.cat||'Pantry',usedBy:[],fromPantry:0,manual:true,note,done:false};
+  libPrice([it]);S.week.shopping.push(it);save();render();toast('Grocery item added');
+}
+function openGroceryEdit(i){
+  const it=S.week?.shopping[i];if(!it)return;
+  $('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Close</button></div><div class="day">Edit grocery</div><h2 class="disp" style="font-size:21px">${esc(it.name)}</h2><label class="frmlbl">Quantity<input id="geq" type="number" min="0.01" step="0.01" value="${round2(it.need)}" style="width:100%;margin-top:5px;padding:11px;border:1.5px solid var(--line);border-radius:10px"></label><label class="frmlbl" style="margin-top:10px">Note<input id="gen" value="${esc(it.note||'')}" placeholder="Optional note" style="width:100%;margin-top:5px;padding:11px;border:1.5px solid var(--line);border-radius:10px"></label><button class="btn" style="margin-top:14px" onclick="saveGroceryEdit(${i})">Save changes</button>${it.manual?`<button class="btn ghost" style="margin-top:9px;color:var(--danger);border-color:var(--danger)" onclick="deleteGroceryItem(${i})">Delete item</button>`:''}</div>`;
+  $('#sheet').classList.add('show');$('#sheet').scrollTop=0;
+}
+function saveGroceryEdit(i){
+  const it=S.week?.shopping[i];if(!it)return;it.need=Math.max(.01,parseFloat($('#geq').value)||it.need);it.gross=it.need;it.note=$('#gen').value.trim();
+  if(it.pkgQty){it.packs=Math.max(1,Math.ceil(it.need/it.pkgQty));it.leftover=round2(it.packs*it.pkgQty-it.need);}save();closeSheet();render();toast('Grocery updated');
+}
+function deleteGroceryItem(i){if(!S.week?.shopping[i]?.manual)return;S.week.shopping.splice(i,1);save();closeSheet();render();toast('Grocery removed');}
 
 /* ----- pantry ----- */
 function viewPantry(){

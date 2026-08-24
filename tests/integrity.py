@@ -73,11 +73,12 @@ for title in steps:
         errors.append(f"{title}: steps have no matching recipe")
 
 assert not errors, "\n".join(errors)
-assert "WeekPlate v35" in HTML
+assert "WeekPlate v36" in HTML
 assert 'id="allergens"' in HTML
 assert "p.allergens" in HTML
 assert "openMoveMeal" in HTML and "setNightLimit" in HTML
 assert "submitWeekFeedback" in HTML and "mealFeedback" in HTML
+assert "viewRecipes" in HTML and "addGroceryItem" in HTML and "openGroceryEdit" in HTML
 assert "user-scalable=no" not in HTML
 root = pathlib.Path(__file__).parent.parent
 for required in ["manifest.webmanifest", "service-worker.js", "icons/icon-192.png", "icons/icon-512.png", "icons/home-hero.jpg", "icons/og-weekplate.jpg", "tests/planner-simulation.html"]:
