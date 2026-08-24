@@ -2,7 +2,9 @@
 
 **What it is:** a single-file, offline-first meal-planning web app. One `index.html` (~223 KB) containing all HTML, CSS, JS, a 100-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
 
-**Current version:** v29 (shown as a badge next to the logo, and in the Guide footer).
+**Current version:** v30 (shown as a badge next to the logo, and in the Guide footer).
+
+**v30:** added a mobile weekly dinner calendar and an explicit plan-review stage. New or changed plans must be approved before the shopping list opens; review controls support swapping, locking, resizing, reshuffling, and removing meals.
 
 **v29:** added a discreet, confirmation-protected testing reset under Setup → Saving & backup → Testing tools. It clears this device's saved data and relaunches the app as a brand-new user for onboarding tests.
 

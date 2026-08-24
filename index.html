@@ -153,6 +153,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;heigh
 .ing-list.open{display:block}
 .ing-list li{padding:3px 0;border-bottom:1px dotted var(--line)}
 .ing-list .q{font-weight:700}
+.reviewbar{background:linear-gradient(135deg,var(--spruce-deep),var(--spruce));color:#fff;border:none;padding:16px;margin-bottom:12px}
+.reviewbar h2{color:#fff;font:800 20px "Bricolage Grotesque",sans-serif;margin-bottom:5px}
+.reviewbar .sub{color:#DDE9E1;margin-bottom:12px}
+.reviewbar.done{background:var(--leaf-bg);border:1.5px solid var(--leaf);color:var(--spruce-deep)}
+.reviewbar.done h2{color:var(--spruce-deep);font-size:16px}.reviewbar.done .sub{color:var(--muted);margin:0}
+.reviewactions{display:flex;gap:8px}.reviewactions .btn{margin:0}.reviewactions .ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.65)}
+.plancal{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 14px}
+.calday{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:11px;text-align:left;min-height:90px;box-shadow:0 2px 7px rgba(31,66,49,.04)}
+.calday:active{background:var(--leaf-bg)}
+.calday .cd{display:block;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--squash)}
+.calday .ct{display:block;margin:5px 0 7px;font-size:13px;font-weight:800;line-height:1.25;color:var(--spruce-deep)}
+.calday .cm{display:flex;flex-wrap:wrap;gap:5px;font-size:10.5px;color:var(--muted)}
+.calday.leftover{background:var(--squash-bg);border-color:#E8C998}
+.calweek{grid-column:1/-1;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--spruce);padding:8px 2px 0}
+@media(min-width:480px){.plancal{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
 /* progress */
 #progress{position:fixed;inset:0;z-index:60;background:rgba(243,245,239,.96);display:none;
@@ -383,7 +398,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v29</span></h1>
+    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v30</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -478,6 +493,7 @@ function migrate(){
   S.macro = Object.assign({mode:'off',cal:0,protein:0,carbs:0,fat:0}, S.macro||{});
   S.priceBook = S.priceBook||{}; S.customRecipes=S.customRecipes||[]; S.photos=S.photos||{};
   S.favorites=S.favorites||[]; S.blocked=S.blocked||[]; S.history=S.history||[];
+  if(S.week && typeof S.week.planApproved==='undefined') S.week.planApproved=true;
   S.pantry=(S.pantry||[]).map(p=>Object.assign({addedAt:null,useBy:null},p));
   // v24: the unauthenticated browser-only AI path could never work safely.
   // Keep planning private, dependable, and fully offline.
@@ -1241,7 +1257,7 @@ function finalizeWeek(mains, keepWeekOf, wasReshuffle){
   const shopping = consolidate(mains.concat(alts.map(a=>a.rec)));
   libPrice(shopping);
   S.week = { recipes:mains, alts, shopping, weekOf: keepWeekOf || new Date().toISOString().slice(0,10),
-             servings:tgt, mode:'lib', horizon:Math.max(1,Math.min(2,S.horizon||1)) };
+             servings:tgt, mode:'lib', horizon:Math.max(1,Math.min(2,S.horizon||1)), planApproved:false };
   save(); tab='plan'; render();
   const nAlt = alts.length;
   toast(`${wasReshuffle?'Reshuffled':'Planned'} · ${shopping.filter(i=>!i.pantryOnly).length} items${nAlt? ` · ${nAlt} alternate meal${nAlt>1?'s':''}`:''}`);
@@ -1391,7 +1407,7 @@ pkgQty = amount per package in the item's stated unit (number). walmart/aldi = p
       }
     }
     prog(100,'Done!','');
-    S.week = { recipes, shopping, weekOf: new Date().toISOString().slice(0,10), servings: tgt };
+    S.week = { recipes, shopping, weekOf: new Date().toISOString().slice(0,10), servings: tgt, planApproved:false };
     save();
     $('#progress').classList.remove('show');
     tab='plan'; render();
@@ -2458,7 +2474,7 @@ async function acceptShared(){
   libPrice(shopping);
   S.pantry = savedPantry;                      // restore their own pantry untouched
   S.week = { recipes, alts, shopping, weekOf:pl.weekOf, servings:pl.servings,
-             mode:'lib', horizon:pl.horizon||1, shared:true, sharedFrom:pl.from||'' };
+             mode:'lib', horizon:pl.horizon||1, shared:true, sharedFrom:pl.from||'', planApproved:true };
   window._pendingShare=null;
   history.replaceState(null,'',location.pathname);
   await saveNow();
@@ -2787,7 +2803,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v29 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v30 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -2823,6 +2839,23 @@ function viewPlan(){
   const w = S.week;
   if(w.shared) h += `<div class="card carry"><h2>📲 Shared plan</h2>
     <p class="sub" style="margin:6px 0 0">${w.sharedFrom? esc(w.sharedFrom)+' sent you this week.':'This week was shared with you.'} Cook it, shop it, check items off — it's yours now. Check-offs stay on this phone.</p></div>`;
+  if(!w.planApproved){
+    h += `<div class="card reviewbar"><h2>Review your plan</h2><p class="sub">Make it feel right before shopping. Swap anything, lock the keepers, or remove a dinner—then approve the week.</p>
+      <div class="reviewactions"><button class="btn ghost" onclick="libReshuffle()">Reshuffle</button><button class="btn" style="background:var(--squash);color:#2B241A" onclick="approvePlan()">Approve plan</button></div></div>`;
+  } else {
+    h += `<div class="card reviewbar done"><div class="row"><div><h2>✓ Plan approved</h2><p class="sub">Your shopping list is ready.</p></div><button class="chip" onclick="S.week.planApproved=false;save();render()">Edit plan</button></div></div>`;
+  }
+  const calCost = r=>{ const src=RECIPES.find(x=>x.t===r.title); return src?recipeCost4(src)*((r.servings||w.servings)/4):0; };
+  let calWeek=0;
+  h += `<section aria-labelledby="calendarTitle"><div class="row"><h2 id="calendarTitle" style="font-size:18px;margin:4px 2px">Your dinner calendar</h2><span class="pill leaf">${w.recipes.reduce((n,r)=>n+(r.double?2:1),0)} nights</span></div><div class="plancal">`;
+  w.recipes.forEach((r,i)=>{
+    const rw=r.week||1;
+    if((w.horizon||1)>1 && rw!==calWeek){ calWeek=rw; h+=`<div class="calweek">Week ${rw}</div>`; }
+    const mins=(r.prepMin||0)+(r.cookMin||0);
+    h += `<button class="calday" onclick="document.getElementById('meal${i}').scrollIntoView({behavior:'smooth',block:'start'})"><span class="cd">${esc(r.day)}${r.locked?' · 🔒':''}</span><span class="ct">${esc(r.title)}</span><span class="cm"><span>${mins} min</span><span>≈${money(calCost(r))}</span>${r.double?'<span>Cook ×2</span>':''}</span></button>`;
+    if(r.leftoverDay) h += `<button class="calday leftover" onclick="document.getElementById('meal${i}').scrollIntoView({behavior:'smooth',block:'start'})"><span class="cd">${esc(r.leftoverDay)}</span><span class="ct">Leftovers · ${esc(r.title)}</span><span class="cm"><span>No cooking</span><span>Already covered</span></span></button>`;
+  });
+  h += `</div></section>`;
   let lastWk = 0;
   h += w.recipes.map((r,i)=>{
     let divider = '';
@@ -2832,7 +2865,7 @@ function viewPlan(){
     }
     const uses = (w.shopping.filter(it=> it.fromPantry>0 && it.usedBy.includes(r.day)).map(it=>it.name));
     const rph = photoOf(r.title);
-    return divider + `<div class="card recipe">
+    return divider + `<div class="card recipe" id="meal${i}">
       ${rph? `<img class="cardphoto" src="${rph.src}" alt="">`:''}
       <div class="top">
         <div class="day">${r.day}${r.double?' · COOK ×2':''}${r.locked?' · 🔒 locked':''}${(r.servings&&r.servings!==S.week.servings&&!r.double)?` · ${r.servings} servings`:''}</div>
@@ -2863,6 +2896,7 @@ function viewPlan(){
           : r.url? `<button onclick="window.open('${esc(r.url)}','_blank')">Recipe ↗</button>`:''}
         <button onclick="toggleLock(${i})" aria-label="Lock">${r.locked?'🔒':'🔓'}</button>
         <button onclick="swapRecipe(${i})">Swap</button>
+        <button onclick="removeMeal(${i})" aria-label="Remove dinner">Remove</button>
       </div>
     </div>`;
   }).join('');
@@ -2887,8 +2921,25 @@ function setMealServings(i, delta){
   const r=S.week.recipes[i]; const cur=r.servings||S.week.servings;
   const next=Math.max(1, Math.min(12, cur+delta));
   rescaleRecipe(r, next);
-  S.week.shopping = consolidate(S.week.recipes); libPrice(S.week.shopping);
+  rebuildWeekShopping(); S.week.planApproved=false;
   save(); render();
+}
+function rebuildWeekShopping(){
+  if(!S.week) return;
+  S.week.shopping=consolidate(S.week.recipes.concat((S.week.alts||[]).map(a=>a.rec)));
+  libPrice(S.week.shopping);
+}
+function approvePlan(){
+  if(!S.week || !S.week.recipes.length){ toast('Add at least one dinner first'); return; }
+  S.week.planApproved=true; save(); render(); toast('Plan approved — shopping list ready');
+}
+function removeMeal(i){
+  if(!S.week || !S.week.recipes[i]) return;
+  const meal=S.week.recipes[i];
+  if(!confirm(`Remove ${meal.title} from this plan?`)) return;
+  S.week.recipes.splice(i,1);
+  rebuildWeekShopping(); S.week.planApproved=false; save(); render();
+  toast('Dinner removed');
 }
 function rerunWeek(hi){
   const wk=S.history[hi]; if(!wk) return;
@@ -2909,7 +2960,7 @@ function toggleBlock(title){
   save(); render(); toast(i>=0?'Unblocked':'Blocked — won\'t appear again');
 }
 function toggleLock(i){
-  const r = S.week.recipes[i]; r.locked = !r.locked; save(); render();
+  const r = S.week.recipes[i]; r.locked = !r.locked; S.week.planApproved=false; save(); render();
   toast(r.locked ? 'Locked — reshuffle will keep it' : 'Unlocked');
 }
 async function swapRecipe(i){
@@ -3015,6 +3066,7 @@ function openSheetFor(r, headline){
 /* ----- shopping list ----- */
 function viewList(){
   if(!S.week) return `<div class="empty"><div class="big">🧾</div><p>No plan yet.</p><p>Build this week's plan first — the priced shopping list appears here.</p></div>`;
+  if(!S.week.planApproved) return `<div class="card" style="text-align:center;padding:28px 20px;margin-top:18px"><div style="font-size:36px;margin-bottom:10px">🗓️</div><h2>Review your dinners first</h2><p class="sub" style="font-size:14px;margin:8px auto 16px;max-width:360px">Swap, lock, or remove meals on the Plan tab. Approve the week when it feels right, and your shopping list will be ready.</p><button class="btn" onclick="tab='plan';render();document.getElementById('main').focus()">Review my plan</button></div>`;
   const w = S.week;
   const store = shopStore();
   const items = sortByAisle(w.shopping.filter(it=>!it.pantryOnly), store);
