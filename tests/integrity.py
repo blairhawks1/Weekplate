@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import ast
+import json
 import pathlib
 import re
 
@@ -73,7 +74,7 @@ for title in steps:
         errors.append(f"{title}: steps have no matching recipe")
 
 assert not errors, "\n".join(errors)
-assert "Sous Chef Shuffle v43" in HTML
+assert "Sous Chef Shuffle v44" in HTML
 assert "WeekPlate v" not in HTML
 assert 'class="onboard-brand">Week' not in HTML
 assert 'class="onboard-brand">Sous Chef <span>Shuffle</span>' in HTML
@@ -90,9 +91,19 @@ assert "exportCalendar" in HTML and "mealCalendarDate" in HTML and "text/calenda
 assert "setMealCook" in HTML and "READ-ONLY SHARED PLAN" in HTML and "Save a copy in my Sous Chef Shuffle" in HTML
 assert "sundayPrepTasks" in HTML and "openSundayPrep" in HTML and "togglePrepTask" in HTML
 assert "SUNDAY PREP MODE" in HTML and "Food-safety note" in HTML and "prepDone" in HTML
+assert "createHouseholdSync" in HTML and "joinHouseholdSync" in HTML and "pullHouseholdSync" in HTML
+assert "Household sync" in HTML and "Never synced:" in HTML and "syncBanner" in HTML
 assert "buildPantryFirst" in HTML and "parseRecipeImport" in HTML and "priorityPantry" in HTML
 assert "user-scalable=no" not in HTML
 root = pathlib.Path(__file__).parent.parent
-for required in ["manifest.webmanifest", "service-worker.js", "icons/icon-192.png", "icons/icon-512.png", "icons/home-hero.jpg", "icons/og-sous-chef-shuffle.png", "tests/planner-simulation.html"]:
+for required in ["manifest.webmanifest", "service-worker.js", "worker.js", "icons/icon-192.png", "icons/icon-512.png", "icons/home-hero.jpg", "icons/og-sous-chef-shuffle.png", "tests/planner-simulation.html"]:
     assert (root / required).exists(), f"missing {required}"
+worker = (root / "worker.js").read_text()
+config = json.loads((root / "wrangler.jsonc").read_text())
+assert config["main"] == "worker.js"
+assert config["assets"]["run_worker_first"] == ["/api/sync/*"]
+assert config["durable_objects"]["bindings"][0]["class_name"] == "HouseholdRoom"
+assert config["exports"]["HouseholdRoom"]["storage"] == "sqlite"
+assert "crypto.getRandomValues" in worker and "Math.random" not in worker
+assert "baseRevision" in worker and "MAX_BODY_BYTES" in worker and "deleteAll" in worker
 print(f"Sous Chef Shuffle integrity checks passed: {len(recipes)} recipes, {len(prices)} prices, {len(nutrition)} nutrition entries.")

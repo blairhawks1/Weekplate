@@ -2,7 +2,9 @@
 
 **What it is:** a single-file, offline-first meal-planning web app. One `index.html` containing all HTML, CSS, JS, a 150-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
 
-**Current version:** v43 (shown as a badge next to the logo, and in the Guide footer).
+**Current version:** v44 (shown as a badge next to the logo, and in the Guide footer).
+
+**v44:** added optional household syncing backed by one SQLite Durable Object per private invite code. Connected phones poll for near-real-time updates and conditionally write against a revision so simultaneous edits cannot silently overwrite one another. The active plan (including recipe details it needs), meal moves, cook assignments, Sunday Prep checkmarks, grocery edits, and shopping check-offs sync; pantry, allergens, prices, preferences, history, photos, the full recipe library, and templates remain device-only. Rooms expire 180 days after their last update.
 
 **v43:** added Sunday Prep Mode. It derives a conservative make-ahead checklist from the active plan, consolidates repeated ingredients and quantities, groups tasks into Produce, Proteins, and Grains, identifies every dinner using each item, estimates remaining active time, provides task-specific storage guidance, and persists checkmarks with the current week. Raw-protein and cooked-grain guidance includes conservative refrigeration/freezing reminders.
 

@@ -1,8 +1,18 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "weekplate",
-  "compatibility_date": "2026-08-23",
+  "main": "worker.js",
+  "compatibility_date": "2026-08-25",
   "assets": {
-    "directory": "."
-  }
+    "directory": ".",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/sync/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "HOUSEHOLDS", "class_name": "HouseholdRoom" }]
+  },
+  "exports": {
+    "HouseholdRoom": { "type": "durable-object", "storage": "sqlite" }
+  },
+  "observability": { "enabled": true, "head_sampling_rate": 1 }
 }
