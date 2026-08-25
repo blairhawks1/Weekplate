@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 
-const MAX_BODY_BYTES = 250_000;
+const MAX_BODY_BYTES = 12_000_000;
+const CHUNK_CHARACTERS = 350_000;
 const ROOM_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 const CODE_RE = /^[A-F0-9]{20}$/;
 
@@ -39,6 +40,7 @@ async function readJson(request) {
 }
 
 function validSnapshot(value) {
+  if (value?.schema === 2) return value.account && typeof value.account === "object" && !Array.isArray(value.account) && !Object.prototype.hasOwnProperty.call(value.account, "sync");
   return value && typeof value === "object" &&
     (value.week === null || (typeof value.week === "object" && Array.isArray(value.week.recipes))) &&
     value.nightLimits && typeof value.nightLimits === "object" &&
@@ -61,61 +63,89 @@ export class HouseholdRoom extends DurableObject {
         updated_at INTEGER NOT NULL,
         updated_by TEXT NOT NULL
       )`);
+      this.ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS room_meta (
+        singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+        revision INTEGER NOT NULL,
+        chunk_count INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        updated_by TEXT NOT NULL
+      )`);
+      this.ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS state_chunks (
+        chunk_index INTEGER PRIMARY KEY,
+        data TEXT NOT NULL
+      )`);
+      const meta = this.metaRow();
+      const legacy = this.ctx.storage.sql.exec("SELECT revision, state_json, updated_at, updated_by FROM shared_state WHERE singleton = 1").toArray()[0];
+      if (!meta && legacy) this.writeState(String(legacy.state_json), Number(legacy.revision), Number(legacy.updated_at), String(legacy.updated_by));
     });
   }
 
-  row() {
+  metaRow() {
     return this.ctx.storage.sql.exec(
-      "SELECT revision, state_json, updated_at, updated_by FROM shared_state WHERE singleton = 1"
+      "SELECT revision, chunk_count, updated_at, updated_by FROM room_meta WHERE singleton = 1"
     ).toArray()[0] || null;
   }
 
   result(row) {
     if (!row) return null;
+    const chunks = this.ctx.storage.sql.exec("SELECT data FROM state_chunks ORDER BY chunk_index").toArray();
+    if (chunks.length !== Number(row.chunk_count)) throw new Error("incomplete_state");
     return {
       revision: Number(row.revision),
-      state: JSON.parse(String(row.state_json)),
+      state: JSON.parse(chunks.map(chunk => String(chunk.data)).join("")),
       updatedAt: Number(row.updated_at),
       updatedBy: String(row.updated_by),
     };
   }
 
+  writeState(serialized, revision, updatedAt, updatedBy) {
+    const chunks = [];
+    for (let offset = 0; offset < serialized.length; offset += CHUNK_CHARACTERS) chunks.push(serialized.slice(offset, offset + CHUNK_CHARACTERS));
+    this.ctx.storage.transactionSync(() => {
+      this.ctx.storage.sql.exec("DELETE FROM state_chunks");
+      chunks.forEach((data, index) => this.ctx.storage.sql.exec("INSERT INTO state_chunks (chunk_index, data) VALUES (?, ?)", index, data));
+      this.ctx.storage.sql.exec(
+        `INSERT INTO room_meta (singleton, revision, chunk_count, updated_at, updated_by) VALUES (1, ?, ?, ?, ?)
+         ON CONFLICT(singleton) DO UPDATE SET revision=excluded.revision, chunk_count=excluded.chunk_count, updated_at=excluded.updated_at, updated_by=excluded.updated_by`,
+        revision, chunks.length, updatedAt, updatedBy
+      );
+    });
+  }
+
   async initialize(state, deviceId) {
-    const existing = this.row();
+    const existing = this.metaRow();
     if (existing) return this.result(existing);
     const now = Date.now();
-    this.ctx.storage.sql.exec(
-      "INSERT INTO shared_state (singleton, revision, state_json, updated_at, updated_by) VALUES (1, 1, ?, ?, ?)",
-      JSON.stringify(state), now, deviceId
-    );
+    this.writeState(JSON.stringify(state), 1, now, deviceId);
     await this.ctx.storage.setAlarm(now + ROOM_TTL_MS);
-    return this.result(this.row());
+    return this.result(this.metaRow());
   }
 
   async getState() {
-    const row = this.row();
+    const row = this.metaRow();
     if (!row) return null;
     return this.result(row);
   }
 
   async updateState(state, baseRevision, deviceId) {
-    const current = this.row();
+    const current = this.metaRow();
     if (!current) return { missing: true };
     if (Number(current.revision) !== Number(baseRevision)) {
       return { conflict: true, current: this.result(current) };
     }
     const revision = Number(current.revision) + 1;
     const now = Date.now();
-    this.ctx.storage.sql.exec(
-      "UPDATE shared_state SET revision = ?, state_json = ?, updated_at = ?, updated_by = ? WHERE singleton = 1",
-      revision, JSON.stringify(state), now, deviceId
-    );
+    this.writeState(JSON.stringify(state), revision, now, deviceId);
     await this.ctx.storage.setAlarm(now + ROOM_TTL_MS);
-    return this.result(this.row());
+    return this.result(this.metaRow());
   }
 
   async alarm() {
-    await this.ctx.storage.deleteAll();
+    this.ctx.storage.transactionSync(() => {
+      this.ctx.storage.sql.exec("DELETE FROM state_chunks");
+      this.ctx.storage.sql.exec("DELETE FROM room_meta");
+      this.ctx.storage.sql.exec("DELETE FROM shared_state");
+    });
   }
 }
 

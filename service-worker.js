@@ -1,4 +1,4 @@
-const CACHE='sous-chef-shuffle-v44';
+const CACHE='sous-chef-shuffle-v45';
 const APP_SHELL=['./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png','./icons/home-hero.jpg','./icons/og-sous-chef-shuffle.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(APP_SHELL)));self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>(key.startsWith('weekplate-')||key.startsWith('sous-chef-shuffle-'))&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));});

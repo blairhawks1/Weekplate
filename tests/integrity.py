@@ -74,7 +74,7 @@ for title in steps:
         errors.append(f"{title}: steps have no matching recipe")
 
 assert not errors, "\n".join(errors)
-assert "Sous Chef Shuffle v44" in HTML
+assert "Sous Chef Shuffle v45" in HTML
 assert "WeekPlate v" not in HTML
 assert 'class="onboard-brand">Week' not in HTML
 assert 'class="onboard-brand">Sous Chef <span>Shuffle</span>' in HTML
@@ -92,7 +92,7 @@ assert "setMealCook" in HTML and "READ-ONLY SHARED PLAN" in HTML and "Save a cop
 assert "sundayPrepTasks" in HTML and "openSundayPrep" in HTML and "togglePrepTask" in HTML
 assert "SUNDAY PREP MODE" in HTML and "Food-safety note" in HTML and "prepDone" in HTML
 assert "createHouseholdSync" in HTML and "joinHouseholdSync" in HTML and "pullHouseholdSync" in HTML
-assert "Household sync" in HTML and "Never synced:" in HTML and "syncBanner" in HTML
+assert "Household account" in HTML and "schema:2,account" in HTML and "syncBanner" in HTML
 assert "buildPantryFirst" in HTML and "parseRecipeImport" in HTML and "priorityPantry" in HTML
 assert "user-scalable=no" not in HTML
 root = pathlib.Path(__file__).parent.parent
@@ -105,5 +105,6 @@ assert config["assets"]["run_worker_first"] == ["/api/sync/*"]
 assert config["durable_objects"]["bindings"][0]["class_name"] == "HouseholdRoom"
 assert config["exports"]["HouseholdRoom"]["storage"] == "sqlite"
 assert "crypto.getRandomValues" in worker and "Math.random" not in worker
-assert "baseRevision" in worker and "MAX_BODY_BYTES" in worker and "deleteAll" in worker
+assert "baseRevision" in worker and "MAX_BODY_BYTES" in worker and "async alarm()" in worker
+assert "state_chunks" in worker and "transactionSync" in worker and "CHUNK_CHARACTERS" in worker
 print(f"Sous Chef Shuffle integrity checks passed: {len(recipes)} recipes, {len(prices)} prices, {len(nutrition)} nutrition entries.")

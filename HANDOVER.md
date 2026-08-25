@@ -2,7 +2,9 @@
 
 **What it is:** a single-file, offline-first meal-planning web app. One `index.html` containing all HTML, CSS, JS, a 150-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
 
-**Current version:** v44 (shown as a badge next to the logo, and in the Guide footer).
+**Current version:** v45 (shown as a badge next to the logo, and in the Guide footer).
+
+**v45:** expanded Household Sync into a complete shared household account. Connected phones now share household members, individual and household allergens, preferences, plans, pantry, prices, recipes, saved templates, history, photos, Sunday Prep progress, and grocery lists. Only the device label and private invite credential stay local. Server state is stored in transactional SQLite chunks so photo-backed accounts do not exceed Cloudflare's per-row size limit; existing v44 rooms migrate automatically from their original single-row storage.
 
 **v44:** added optional household syncing backed by one SQLite Durable Object per private invite code. Connected phones poll for near-real-time updates and conditionally write against a revision so simultaneous edits cannot silently overwrite one another. The active plan (including recipe details it needs), meal moves, cook assignments, Sunday Prep checkmarks, grocery edits, and shopping check-offs sync; pantry, allergens, prices, preferences, history, photos, the full recipe library, and templates remain device-only. Rooms expire 180 days after their last update.
 

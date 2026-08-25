@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Sous Chef Shuffle">
 <meta name="theme-color" content="#F3F5EF">
-<meta name="description" content="Private, device-local weekly meal planning, grocery pricing, and pantry tracking.">
+<meta name="description" content="Shared household meal planning, grocery pricing, pantry tracking, recipes, and prep across connected phones.">
 <meta name="referrer" content="no-referrer">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://weekplate.blairhawks1.workers.dev/">
@@ -411,7 +411,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Sous Chef <span>Shuffle</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v44</span></h1>
+    <h1>Sous Chef <span>Shuffle</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v45</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -549,7 +549,7 @@ async function saveNow(){
   return await rawSet(JSON.stringify(S));
 }
 
-/* --- optional household sync: active plan only; private settings never leave the device --- */
+/* --- optional full household-account sync; credentials and device identity stay local --- */
 let syncPollTimer=null,syncPushTimer=null,syncApplying=false,syncReady=false,syncStatus='off',syncLastSnapshotJSON='';
 function syncCookOptions(){
   const names=(S.household||[]).map((p,i)=>personLabel(p,i)).concat(S.sync?.cookNames||[]);
@@ -559,27 +559,21 @@ function syncNamesForUpload(){
   const named=(S.household||[]).map(p=>String(p.name||'').trim()).filter(Boolean),assigned=(S.week?.recipes||[]).map(r=>r.cook).filter(Boolean);
   return [...new Set((S.sync?.cookNames||[]).concat(named,assigned))];
 }
-function publicWeekForSync(){
-  if(!S.week)return null;const week=JSON.parse(JSON.stringify(S.week));delete week.shared;delete week.sharedFrom;
-  week.shopping=(week.shopping||[]).filter(i=>!i.pantryOnly).map(i=>({name:i.name,need:i.need,gross:i.gross,unit:i.unit,category:i.category,usedBy:i.usedBy||[],manual:!!i.manual,note:i.note||'',done:!!i.done}));
-  return week;
-}
 function syncSnapshot(){
-  return {week:publicWeekForSync(),nightLimits:JSON.parse(JSON.stringify(S.nightLimits||{})),cookNames:syncNamesForUpload()};
-}
-function hydrateHouseholdWeek(sharedWeek){
-  if(!sharedWeek)return null;const week=JSON.parse(JSON.stringify(sharedWeek)),mealItems=(week.recipes||[]).concat((week.alts||[]).map(a=>a.rec)),local=consolidate(mealItems),privateByKey=new Map(local.map(i=>[`${normName(i.name)}|${i.unit}`,i]));
-  const merged=(week.shopping||[]).map(i=>{const own=privateByKey.get(`${normName(i.name)}|${i.unit}`);return Object.assign({},i,{fromPantry:own?.fromPantry||0,pantryOnly:false});});
-  local.filter(i=>i.pantryOnly).forEach(i=>merged.push(i));libPrice(merged);week.shopping=merged;return week;
+  const account=JSON.parse(JSON.stringify(S));delete account.sync;
+  return {schema:2,account};
 }
 function setSyncStatus(status){syncStatus=status;document.querySelectorAll('.syncstatus').forEach(el=>{el.textContent=status==='live'?'● Synced':status==='syncing'?'● Syncing…':status==='offline'?'● Offline':'● Needs attention';el.className=`pill syncstatus ${status==='live'?'leaf':'sq'}`;});}
 function formatSyncCode(code){return String(code||'').replace(/-/g,'').toUpperCase().match(/.{1,4}/g)?.join('-')||'';}
-function syncBanner(){return S.sync?.code?`<div class="card carry"><div class="row"><div><h2>☁ Household plan</h2><p class="sub" style="margin:3px 0 0">Changes and grocery check-offs sync across connected phones.</p></div><span class="pill syncstatus ${syncStatus==='live'?'leaf':'sq'}">${syncStatus==='live'?'● Synced':syncStatus==='syncing'?'● Syncing…':syncStatus==='offline'?'● Offline':'● Connecting'}</span></div></div>`:'';}
+function syncBanner(){return S.sync?.code?`<div class="card carry"><div class="row"><div><h2>☁ Shared household</h2><p class="sub" style="margin:3px 0 0">Plans, settings, pantry, recipes, and check-offs sync across connected phones.</p></div><span class="pill syncstatus ${syncStatus==='live'?'leaf':'sq'}">${syncStatus==='live'?'● Synced':syncStatus==='syncing'?'● Syncing…':syncStatus==='offline'?'● Offline':'● Connecting'}</span></div></div>`:'';}
 function scheduleSyncPush(){
   if(syncApplying||!syncReady||!S.sync?.code)return;clearTimeout(syncPushTimer);syncPushTimer=setTimeout(pushHouseholdSync,650);
 }
 async function applyHouseholdState(data,notify=false){
-  if(!data?.state)return;syncApplying=true;S.week=hydrateHouseholdWeek(data.state.week);S.nightLimits=JSON.parse(JSON.stringify(data.state.nightLimits||{}));S.sync.cookNames=data.state.cookNames||[];S.sync.revision=data.revision||0;S.sync.updatedAt=data.updatedAt||Date.now();syncLastSnapshotJSON=JSON.stringify(data.state);mem.state=S;await rawSet(JSON.stringify(S));syncApplying=false;setSyncStatus('live');render();if(document.getElementById('shop')?.classList.contains('show'))renderShop();if(notify)toast('Latest household changes loaded');
+  if(!data?.state)return;syncApplying=true;const localSync=JSON.parse(JSON.stringify(S.sync||{}));
+  if(data.state.schema===2&&data.state.account){S=Object.assign(JSON.parse(JSON.stringify(DEFAULTS)),JSON.parse(JSON.stringify(data.state.account)));S.sync=localSync;migrate();applyCustomRecipes();clearCostCache();clearNutCache();}
+  else{S.week=JSON.parse(JSON.stringify(data.state.week||null));S.nightLimits=JSON.parse(JSON.stringify(data.state.nightLimits||{}));S.sync.cookNames=data.state.cookNames||[];}
+  S.sync.revision=data.revision||0;S.sync.updatedAt=data.updatedAt||Date.now();syncLastSnapshotJSON=JSON.stringify(data.state);mem.state=S;await rawSet(JSON.stringify(S));syncApplying=false;setSyncStatus('live');render();if(document.getElementById('shop')?.classList.contains('show'))renderShop();if(notify)toast('Latest household account loaded');
 }
 async function pullHouseholdSync(notify=false){
   if(!S.sync?.code)return;setSyncStatus(navigator.onLine?'syncing':'offline');
@@ -587,22 +581,22 @@ async function pullHouseholdSync(notify=false){
 }
 async function pushHouseholdSync(){
   if(!syncReady||!S.sync?.code||syncApplying)return;const state=syncSnapshot(),encoded=JSON.stringify(state);if(encoded===syncLastSnapshotJSON){setSyncStatus('live');return;}setSyncStatus('syncing');
-  try{const res=await fetch(`/api/sync/${encodeURIComponent(S.sync.code)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({state,baseRevision:S.sync.revision||0,deviceId:S.sync.deviceId})});const data=await res.json();if(res.status===409){await applyHouseholdState(data);toast('Another phone updated first — its latest changes were loaded');return;}if(!res.ok)throw new Error(data.error==='payload_too_large'?'This plan is too large to sync':'Sync failed');S.sync.revision=data.revision;S.sync.updatedAt=data.updatedAt;syncLastSnapshotJSON=JSON.stringify(data.state);mem.state=S;await rawSet(JSON.stringify(S));setSyncStatus('live');}catch(e){setSyncStatus(navigator.onLine?'error':'offline');}
+  try{const res=await fetch(`/api/sync/${encodeURIComponent(S.sync.code)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({state,baseRevision:S.sync.revision||0,deviceId:S.sync.deviceId})});const data=await res.json();if(res.status===409){await applyHouseholdState(data);toast('Another phone updated first — its latest changes were loaded');return;}if(!res.ok)throw new Error(data.error==='payload_too_large'?'This household account is too large to sync':'Sync failed');S.sync.revision=data.revision;S.sync.updatedAt=data.updatedAt;syncLastSnapshotJSON=JSON.stringify(data.state);mem.state=S;await rawSet(JSON.stringify(S));setSyncStatus('live');}catch(e){setSyncStatus(navigator.onLine?'error':'offline');}
 }
 function startHouseholdPolling(){clearInterval(syncPollTimer);syncReady=false;if(!S.sync?.code)return;pullHouseholdSync();syncPollTimer=setInterval(()=>pullHouseholdSync(false),4000);}
 async function createHouseholdSync(){
   const deviceName=($('#syncDevice')?.value||S.household?.[0]?.name||'My phone').trim().slice(0,30)||'My phone';setSyncStatus('syncing');
-  try{const state=syncSnapshot(),res=await fetch('/api/sync/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({state,deviceId:S.sync.deviceId})}),data=await res.json();if(!res.ok)throw new Error('Could not start household sync');S.sync=Object.assign(S.sync,{code:data.code,deviceName,revision:data.revision,cookNames:state.cookNames,updatedAt:data.updatedAt});syncLastSnapshotJSON=JSON.stringify(data.state);syncReady=true;await rawSet(JSON.stringify(S));startHouseholdPolling();showSyncInvite();render();}catch(e){setSyncStatus('error');toast(e.message);}
+  try{const state=syncSnapshot(),res=await fetch('/api/sync/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({state,deviceId:S.sync.deviceId})}),data=await res.json();if(!res.ok)throw new Error('Could not start household account');S.sync=Object.assign(S.sync,{code:data.code,deviceName,revision:data.revision,updatedAt:data.updatedAt});syncLastSnapshotJSON=JSON.stringify(data.state);syncReady=true;await rawSet(JSON.stringify(S));startHouseholdPolling();showSyncInvite();render();}catch(e){setSyncStatus('error');toast(e.message);}
 }
 async function joinHouseholdSync(code){
   code=String(code||$('#syncCode')?.value||'').replace(/[^a-f0-9]/gi,'').toUpperCase();if(code.length!==20){toast('Enter the complete 20-character invite code');return;}const deviceName=($('#syncDevice')?.value||'This phone').trim().slice(0,30)||'This phone';
-  try{setSyncStatus('syncing');const res=await fetch(`/api/sync/${code}`,{cache:'no-store'}),data=await res.json();if(!res.ok)throw new Error('That invite code was not found or has expired');if(S.week&&!confirm('Join this household and replace the plan currently on this phone?'))return;S.sync=Object.assign(S.sync,{code,deviceName,revision:0,cookNames:[]});S.onboardingDone=true;await applyHouseholdState(data,true);history.replaceState(null,'',location.pathname);startHouseholdPolling();closeSheet();tab='plan';render();}catch(e){setSyncStatus('error');toast(e.message);}
+  try{setSyncStatus('syncing');const res=await fetch(`/api/sync/${code}`,{cache:'no-store'}),data=await res.json();if(!res.ok)throw new Error('That invite code was not found or has expired');if(!confirm('Join this shared household? All app data on this phone will be replaced by the household account.'))return;S.sync=Object.assign(S.sync,{code,deviceName,revision:0,cookNames:[]});await applyHouseholdState(data,true);history.replaceState(null,'',location.pathname);startHouseholdPolling();closeSheet();tab='plan';render();}catch(e){setSyncStatus('error');toast(e.message);}
 }
-function leaveHouseholdSync(){if(!confirm('Leave household sync on this phone? The current plan stays here as a private copy.'))return;clearInterval(syncPollTimer);clearTimeout(syncPushTimer);S.sync=Object.assign(S.sync,{code:'',deviceName:'',revision:0,cookNames:[]});syncReady=false;syncStatus='off';syncLastSnapshotJSON='';saveNow().then(()=>render());}
+function leaveHouseholdSync(){if(!confirm('Leave the shared household on this phone? Its current data will stay here as a separate copy.'))return;clearInterval(syncPollTimer);clearTimeout(syncPushTimer);S.sync=Object.assign(S.sync,{code:'',deviceName:'',revision:0,cookNames:[]});syncReady=false;syncStatus='off';syncLastSnapshotJSON='';saveNow().then(()=>render());}
 function syncInviteUrl(){return `${location.origin}${location.pathname}#join=${encodeURIComponent(S.sync.code)}`;}
-function shareSyncInvite(){const url=syncInviteUrl(),text='Join my Sous Chef Shuffle household. Anyone with this private link can view and change our active plan and grocery list.';if(navigator.share){navigator.share({title:'Sous Chef Shuffle household invite',text,url}).catch(()=>{});return;}navigator.clipboard?.writeText(url).then(()=>toast('Invite link copied')).catch(()=>toast('Copy the code shown below'));}
-function showSyncInvite(){if(!S.sync?.code)return;$('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Close</button></div><div class="day">HOUSEHOLD SYNC</div><h2 class="disp" style="font-size:22px">Invite another phone</h2><p class="sub">Share this private link with household members you trust. Anyone who has it can view and change the active plan and grocery list.</p><div class="card" style="text-align:center"><div class="day">Invite code</div><div class="mono" style="font-size:20px;font-weight:800;letter-spacing:1px;margin-top:6px">${formatSyncCode(S.sync.code)}</div></div><button class="btn" onclick="shareSyncInvite()">Share private invite link</button><textarea readonly onclick="this.select()" style="width:100%;height:80px;margin-top:10px;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:var(--card);font-size:11px">${esc(syncInviteUrl())}</textarea><p class="sub" style="margin-top:10px"><b>Shared:</b> active plan, meal moves, cook assignments, prep checkmarks, grocery edits, and shopping check-offs.<br><b>Private:</b> pantry, allergens, prices, preferences, history, photos, and saved templates.</p></div>`;$('#sheet').classList.add('show');$('#sheet').scrollTop=0;}
-function openJoinHousehold(code=''){$('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Close</button></div><div class="day">JOIN HOUSEHOLD</div><h2 class="disp" style="font-size:22px">Sync this phone</h2><p class="sub">Enter the private invite code. The household’s active plan will replace any plan currently on this phone.</p><label class="frmlbl">This device’s name<input id="syncDevice" maxlength="30" value="${esc(S.sync?.deviceName||'This phone')}" style="width:100%;margin-top:5px;padding:11px;border:1.5px solid var(--line);border-radius:10px"></label><label class="frmlbl" style="margin-top:10px">Invite code<input id="syncCode" maxlength="24" autocapitalize="characters" value="${esc(formatSyncCode(code))}" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" style="width:100%;margin-top:5px;padding:11px;border:1.5px solid var(--line);border-radius:10px;font:700 15px ui-monospace,monospace;text-transform:uppercase"></label><button class="btn" style="margin-top:14px" onclick="joinHouseholdSync(document.getElementById('syncCode').value)">Join household</button><p class="sub" style="margin-top:10px">Only join households you trust. The invite code is the access key.</p></div>`;$('#sheet').classList.add('show');$('#sheet').scrollTop=0;}
+function shareSyncInvite(){const url=syncInviteUrl(),text='Join my Sous Chef Shuffle household. Anyone with this private link can view and change our shared household account.';if(navigator.share){navigator.share({title:'Sous Chef Shuffle household invite',text,url}).catch(()=>{});return;}navigator.clipboard?.writeText(url).then(()=>toast('Invite link copied')).catch(()=>toast('Copy the code shown below'));}
+function showSyncInvite(){if(!S.sync?.code)return;$('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Close</button></div><div class="day">HOUSEHOLD ACCOUNT</div><h2 class="disp" style="font-size:22px">Invite another phone</h2><p class="sub">Share this private link only with household members you trust. Anyone who has it can view and change the entire shared account.</p><div class="card" style="text-align:center"><div class="day">Invite code</div><div class="mono" style="font-size:20px;font-weight:800;letter-spacing:1px;margin-top:6px">${formatSyncCode(S.sync.code)}</div></div><button class="btn" onclick="shareSyncInvite()">Share private invite link</button><textarea readonly onclick="this.select()" style="width:100%;height:80px;margin-top:10px;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:var(--card);font-size:11px">${esc(syncInviteUrl())}</textarea><p class="sub" style="margin-top:10px"><b>Shared:</b> household members, allergens, preferences, plans, pantry, prices, recipes, templates, history, photos, prep progress, and grocery lists.<br><b>Kept on each phone:</b> its device name and private access credential.</p></div>`;$('#sheet').classList.add('show');$('#sheet').scrollTop=0;}
+function openJoinHousehold(code=''){$('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Close</button></div><div class="day">JOIN HOUSEHOLD</div><h2 class="disp" style="font-size:22px">Sync this phone</h2><p class="sub">Enter the private invite code. The complete shared household account will replace this phone’s current app data.</p><label class="frmlbl">This device’s name<input id="syncDevice" maxlength="30" value="${esc(S.sync?.deviceName||'This phone')}" style="width:100%;margin-top:5px;padding:11px;border:1.5px solid var(--line);border-radius:10px"></label><label class="frmlbl" style="margin-top:10px">Invite code<input id="syncCode" maxlength="24" autocapitalize="characters" value="${esc(formatSyncCode(code))}" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" style="width:100%;margin-top:5px;padding:11px;border:1.5px solid var(--line);border-radius:10px;font:700 15px ui-monospace,monospace;text-transform:uppercase"></label><button class="btn" style="margin-top:14px" onclick="joinHouseholdSync(document.getElementById('syncCode').value)">Join household</button><p class="sub" style="margin-top:10px">Only join households you trust. The invite code is the access key to all shared household data.</p></div>`;$('#sheet').classList.add('show');$('#sheet').scrollTop=0;}
 /* flush before the app is backgrounded or closed — critical on iOS */
 try{
   document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') saveNow(); });
@@ -2946,7 +2940,7 @@ function viewHelp(){
   return `
   <div class="card" style="background:var(--spruce);border-color:var(--spruce)">
     <h2 style="color:#fff">How Sous Chef Shuffle works</h2>
-    <p class="sub" style="color:#CFE0D5;margin:6px 0 0">Plan dinners, price a shopping list, and use what’s left over. Core planning stays on your phone; optional household sync keeps one active plan current across devices.</p>
+    <p class="sub" style="color:#CFE0D5;margin:6px 0 0">Plan dinners, price a shopping list, and use what’s left over. Optional household accounts keep everything current across your connected phones.</p>
   </div>
 
   <div class="card">
@@ -2962,7 +2956,7 @@ function viewHelp(){
 
   <div class="card">
     <h2>💾 Saving your data <span class="pill ${storageBackend==='none'?'sq':'leaf'}">${esc(backendTxt)}</span></h2>
-    <p class="sub">Your settings, pantry, allergens, prices, history, recipes, and photos live <b>on this device only</b>—there’s no cloud account. If you enable Household Sync, only the active plan and its checklists are stored in your private invite-code room.</p>
+    <p class="sub">By default your data lives on this device. If you enable a Household Account, settings, pantry, allergens, prices, history, recipes, photos, plans, and checklists are stored in your private invite-code room and kept current across connected phones.</p>
     ${S_('Is my stuff actually being saved?',
       `Check the badge above, or <b>Setup → Saving &amp; backup</b>. It'll say one of:<br>
        • <b>✓ Saving (this browser)</b> — normal when you run Sous Chef Shuffle from a web address. You're good.<br>
@@ -2986,11 +2980,11 @@ function viewHelp(){
   <div class="card">
     <h2>📲 Sharing with family</h2>
     ${S_('Keep phones live with Household Sync',
-      `<b>Setup → Household sync → Start household sync.</b> Share the private invite link with people you trust. Meal changes, cook assignments, Sunday Prep progress, grocery edits, and shopping check-offs then stay current across connected phones.<br><br>The invite code is the access key. Rooms expire 180 days after their last update.`)}
+      `<b>Setup → Household account → Start household account.</b> Share the private invite link with people you trust. The entire household—people, allergens, preferences, plans, pantry, prices, recipes, templates, history, photos, prep progress, and grocery lists—then stays current across connected phones.<br><br>The invite code is the access key. Rooms expire 180 days after their last update.`)}
     ${S_('Send a read-only snapshot instead',
       `<b>Plan tab → 📲 Share read-only plan &amp; grocery list.</b> Use this when someone only needs to see the week. It is a one-time snapshot and never joins them to your live household room.`)}
-    ${S_('What stays private',
-      `Household Sync never uploads pantry contents, allergens, store prices, planning preferences, history, photos, your full recipe library, or saved templates. Recipe details used in the active plan travel with that plan so connected cooks can use them.`)}
+    ${S_('What stays on each phone',
+      `When Household Account is enabled, the phone’s device name and private access credential remain local. All meal-planning data is shared so every connected phone behaves like the same account.`)}
   </div>
 
   <div class="card">
@@ -3067,7 +3061,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">Sous Chef Shuffle v44 · ${RECIPES.length} recipes built in · private data stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">Sous Chef Shuffle v45 · ${RECIPES.length} recipes built in · optional shared household accounts</p>`;
 }
 
 /* ----- plan ----- */
@@ -3899,9 +3893,9 @@ function viewSetup(){
   </div>`:''}
 
   <div class="card">
-    <div class="row"><div><h2>Household sync</h2><p class="sub" style="margin:3px 0 0">Keep one active plan and grocery checklist current across phones.</p></div>${S.sync?.code?`<span class="pill syncstatus ${syncStatus==='live'?'leaf':'sq'}">${syncStatus==='live'?'● Synced':syncStatus==='syncing'?'● Syncing…':syncStatus==='offline'?'● Offline':'● Connecting'}</span>`:''}</div>
-    ${S.sync?.code?`<div class="card carry" style="margin:12px 0"><span class="day">Connected household</span><div class="mono" style="font-weight:800;margin-top:4px">${formatSyncCode(S.sync.code)}</div><p class="sub" style="margin:5px 0 0">This device: ${esc(S.sync.deviceName||'This phone')}${S.sync.updatedAt?` · last activity ${new Date(S.sync.updatedAt).toLocaleString()}`:''}</p></div><div class="row" style="gap:8px"><button class="btn ghost" style="flex:1" onclick="showSyncInvite()">Invite phone</button><button class="btn ghost" style="flex:1" onclick="pullHouseholdSync(true)">Sync now</button></div><button class="btn ghost" style="margin-top:9px;color:var(--danger);border-color:var(--danger)" onclick="leaveHouseholdSync()">Leave household sync</button>`:`<p class="sub" style="margin-top:10px">Start a private household room from this phone, or join one using an invite. Only the active plan and its grocery/prep checklists sync.</p><label class="frmlbl">This device’s name<input id="syncDevice" maxlength="30" value="${esc(S.household?.[0]?.name||'My phone')}" placeholder="e.g. Mackenzie’s phone" style="width:100%;margin-top:5px;padding:11px;border:1.5px solid var(--line);border-radius:10px"></label><button class="btn" style="margin-top:12px" onclick="createHouseholdSync()">Start household sync</button><button class="btn ghost" style="margin-top:9px" onclick="openJoinHousehold()">Join with invite code</button>`}
-    <p class="sub" style="margin:12px 0 0"><b>Never synced:</b> pantry, allergens, store prices, preferences, history, photos, your full recipe library, or saved templates. Recipe details used by the active plan travel with that plan. Invite codes are private access keys.</p>
+    <div class="row"><div><h2>Household account</h2><p class="sub" style="margin:3px 0 0">Keep the entire household account current across connected phones.</p></div>${S.sync?.code?`<span class="pill syncstatus ${syncStatus==='live'?'leaf':'sq'}">${syncStatus==='live'?'● Synced':syncStatus==='syncing'?'● Syncing…':syncStatus==='offline'?'● Offline':'● Connecting'}</span>`:''}</div>
+    ${S.sync?.code?`<div class="card carry" style="margin:12px 0"><span class="day">Connected household</span><div class="mono" style="font-weight:800;margin-top:4px">${formatSyncCode(S.sync.code)}</div><p class="sub" style="margin:5px 0 0">This device: ${esc(S.sync.deviceName||'This phone')}${S.sync.updatedAt?` · last activity ${new Date(S.sync.updatedAt).toLocaleString()}`:''}</p></div><div class="row" style="gap:8px"><button class="btn ghost" style="flex:1" onclick="showSyncInvite()">Invite phone</button><button class="btn ghost" style="flex:1" onclick="pullHouseholdSync(true)">Sync now</button></div><button class="btn ghost" style="margin-top:9px;color:var(--danger);border-color:var(--danger)" onclick="leaveHouseholdSync()">Leave household account</button>`:`<p class="sub" style="margin-top:10px">Start a private shared account from this phone, or join one using an invite. All household data will stay synced across connected phones.</p><label class="frmlbl">This device’s name<input id="syncDevice" maxlength="30" value="${esc(S.household?.[0]?.name||'My phone')}" placeholder="e.g. Mackenzie’s phone" style="width:100%;margin-top:5px;padding:11px;border:1.5px solid var(--line);border-radius:10px"></label><button class="btn" style="margin-top:12px" onclick="createHouseholdSync()">Start household account</button><button class="btn ghost" style="margin-top:9px" onclick="openJoinHousehold()">Join with invite code</button>`}
+    <p class="sub" style="margin:12px 0 0"><b>Shared:</b> people, allergens, preferences, plans, pantry, prices, recipes, templates, history, photos, prep progress, and grocery lists. Only this phone’s device name and access credential stay local. Invite codes are private access keys.</p>
   </div>
 
   <div class="card">
