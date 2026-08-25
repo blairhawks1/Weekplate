@@ -408,7 +408,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v38</span></h1>
+    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v39</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -1680,7 +1680,7 @@ function completeWeek(){
   S.history = S.history||[];
   S.history.unshift({weekOf:w.weekOf, titles:w.recipes.map(r=>r.title), servings:w.servings, horizon:w.horizon||1, ts:Date.now()});
   S.history = S.history.slice(0,8);
-  S.weeksDone++; S.week = null; save();
+  S.weeksDone++; S.week = null; editingTemplateIndex=null; save();
   tab='pantry'; render();
   toast(added? `${added} leftover items moved to pantry` : 'Week finished — no leftovers');
 }
@@ -2120,16 +2120,14 @@ const AISLES = {
     ['Bakery','Bakery & Bread'],
     ['Meat & Seafood','Meat & Seafood'],
     ['Dairy & Eggs','Dairy & Eggs'],
-    ['Pantry','Center Aisles (canned, pasta, sauces)'],
-    ['Frozen','Frozen']
+    ['Pantry','Center Aisles (canned, pasta, sauces)'],['Frozen','Frozen'],['Household','Household supplies'],['Personal Care','Personal care'],['Pet','Pet supplies'],['Other','Other items']
   ],
   aldi: [
     ['Pantry','Center Aisles (canned, pasta, sauces)'],
     ['Bakery','Bakery & Bread'],
     ['Produce','Produce'],
     ['Meat & Seafood','Meat & Seafood'],
-    ['Dairy & Eggs','Dairy & Eggs'],
-    ['Frozen','Frozen']
+    ['Dairy & Eggs','Dairy & Eggs'],['Frozen','Frozen'],['Household','Household supplies'],['Personal Care','Personal care'],['Pet','Pet supplies'],['Other','Other items']
   ]
 };
 // finer sub-order within a category so you don't zigzag an aisle
@@ -2985,13 +2983,14 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v38 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v39 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
+let editingTemplateIndex=null;
 function templatePanel(){
   const t=S.planTemplates||[];if(!t.length)return '';
-  return `<div class="card"><div class="row"><div><h2>Saved plan templates</h2><p class="sub" style="margin:3px 0 0">Reuse a favorite week without rebuilding it.</p></div><span class="pill leaf">${t.length}</span></div>${t.map((x,i)=>`<div class="pitem"><span class="nm">${esc(x.name)}<br><span class="qty">${x.items.length} cooked meal${x.items.length===1?'':'s'} · ${x.horizon||1} week${(x.horizon||1)>1?'s':''}${(x.manual||[]).length?` · ${x.manual.length} added grocer${x.manual.length===1?'y':'ies'}`:''}</span></span><button class="chip on" onclick="loadPlanTemplate(${i})">Use</button><button class="x" aria-label="Delete ${esc(x.name)}" onclick="deletePlanTemplate(${i})">✕</button></div>`).join('')}</div>`;
+  return `<div class="card"><div class="row"><div><h2>Saved plan templates</h2><p class="sub" style="margin:3px 0 0">Reuse, edit, rename, or duplicate a favorite week.</p></div><span class="pill leaf">${t.length}</span></div>${t.map((x,i)=>`<div class="pitem"><span class="nm">${esc(x.name)}<br><span class="qty">${x.items.length} cooked meal${x.items.length===1?'':'s'} · ${x.horizon||1} week${(x.horizon||1)>1?'s':''}${(x.manual||[]).length?` · ${x.manual.length} added grocer${x.manual.length===1?'y':'ies'}`:''}</span></span><div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end"><button class="chip on" onclick="loadPlanTemplate(${i})">Use</button><button class="chip" onclick="editPlanTemplate(${i})">Edit</button><button class="chip" onclick="renamePlanTemplate(${i})">Rename</button><button class="chip" onclick="duplicatePlanTemplate(${i})">Copy</button></div><button class="x" aria-label="Delete ${esc(x.name)}" onclick="deletePlanTemplate(${i})">✕</button></div>`).join('')}</div>`;
 }
 function viewPlan(){
   let h = '';
@@ -3109,10 +3108,10 @@ function viewPlan(){
   h += `<button class="btn ghost" style="margin-top:10px" onclick="makePDF()">🖨 Print ${((w.horizon||1)>1)?'2 weeks':'week'} to PDF</button>
         <button class="btn ghost" style="margin-top:10px" onclick="exportForPDF()">📋 Get PDF via Claude chat</button>`;
   if(w.mode==='lib') h += `<button class="btn ghost" style="margin-top:10px" onclick="libReshuffle()">↻ Reshuffle unlocked dinners</button>`;
-  h += `<button class="btn ghost" style="margin-top:10px" onclick="openSavePlanTemplate()">☆ Save this plan as a template</button>`;
+  h += editingTemplateIndex!=null?`<button class="btn" style="margin-top:10px" onclick="updateEditingTemplate()">Save changes to “${esc(S.planTemplates[editingTemplateIndex]?.name||'template')}”</button><button class="btn ghost" style="margin-top:8px" onclick="editingTemplateIndex=null;render()">Stop editing template</button>`:`<button class="btn ghost" style="margin-top:10px" onclick="openSavePlanTemplate()">☆ Save this plan as a template</button>`;
   h += templatePanel();
   h += `<button class="btn warn" style="margin-top:10px" onclick="finishWeek()">✓ Finish ${((w.horizon||1)>1)?'both weeks':'week'} — save leftovers to pantry</button>
-        <button class="btn ghost" style="margin-top:10px" onclick="if(confirm('Discard this plan?')){S.week=null;save();render();}">Discard plan</button>`;
+        <button class="btn ghost" style="margin-top:10px" onclick="if(confirm('Discard this plan?')){S.week=null;editingTemplateIndex=null;save();render();}">Discard plan</button>`;
   return h;
 }
 
@@ -3123,24 +3122,37 @@ function openSavePlanTemplate(){
 }
 function savePlanTemplate(){
   const name=$('#tplName').value.trim();if(!name){toast('Enter a template name');return;}
-  const w=S.week, tpl={name,createdAt:Date.now(),horizon:w.horizon||1,dinners:S.dinners,servings:w.servings,maxMinutes:S.maxMinutes,budgetCap:S.budgetCap,leftoverNights:S.leftoverNights,store:S.store,nightLimits:JSON.parse(JSON.stringify(S.nightLimits||{})),items:w.recipes.map(r=>({title:r.title,day:r.day,week:r.week||1,servings:r.servings||w.servings,double:!!r.double,leftoverDay:r.leftoverDay||'',leftoverWeek:r.leftoverWeek||r.week||1})),manual:JSON.parse(JSON.stringify((w.shopping||[]).filter(i=>i.manual).map(i=>({name:i.name,need:i.need,gross:i.need,unit:i.unit,category:i.category,usedBy:[],fromPantry:0,manual:true,note:i.note||'',done:false}))))};
+  const tpl=currentPlanTemplate(name);
   const at=(S.planTemplates||[]).findIndex(x=>x.name.toLowerCase()===name.toLowerCase());
   if(at>=0){if(!confirm(`Replace the saved template “${name}”?`))return;S.planTemplates[at]=tpl;}else S.planTemplates.push(tpl);
   save();closeSheet();render();toast('Plan template saved');
 }
-function loadPlanTemplate(i){
+function currentPlanTemplate(name){
+  const w=S.week;return {name,createdAt:Date.now(),horizon:w.horizon||1,dinners:S.dinners,servings:w.servings,maxMinutes:S.maxMinutes,budgetCap:S.budgetCap,leftoverNights:S.leftoverNights,store:S.store,nightLimits:JSON.parse(JSON.stringify(S.nightLimits||{})),items:w.recipes.map(r=>({title:r.title,day:r.day,week:r.week||1,servings:r.servings||w.servings,double:!!r.double,leftoverDay:r.leftoverDay||'',leftoverWeek:r.leftoverWeek||r.week||1})),manual:JSON.parse(JSON.stringify((w.shopping||[]).filter(i=>i.manual).map(i=>({name:i.name,need:i.need,gross:i.need,unit:i.unit,category:i.category,usedBy:[],fromPantry:0,manual:true,note:i.note||'',done:false}))))};
+}
+function loadPlanTemplate(i,forEdit=false){
   const t=(S.planTemplates||[])[i];if(!t)return;
   const missing=t.items.filter(x=>!RECIPES.some(r=>r.t===x.title));if(missing.length){toast('A recipe in this template is no longer available');return;}
   const unsafe=t.items.filter(x=>{const r=RECIPES.find(z=>z.t===x.title);return !passesAvoid(r,avoidList());});
   if(unsafe.length){toast(`Template conflicts with current allergens or dislikes: ${unsafe[0].title}`);return;}
-  if(S.week&&!confirm(`Replace the current plan with “${t.name}”?`))return;
+  if(S.week&&!confirm(`${forEdit?'Load this template for editing and replace':'Replace'} the current plan with “${t.name}”?`))return;
   S.horizon=t.horizon||1;S.dinners=t.dinners||Math.min(7,t.items.length);S.maxMinutes=t.maxMinutes||S.maxMinutes;S.budgetCap=t.budgetCap||0;S.leftoverNights=t.leftoverNights||0;S.store=t.store||S.store;S.nightLimits=JSON.parse(JSON.stringify(t.nightLimits||{}));
   const recipes=t.items.map(x=>{const src=RECIPES.find(r=>r.t===x.title),rec=libRecipeObj(src,x.day,(x.servings||t.servings||targetServings())/4);rec.week=x.week||1;if(x.double){rec.double=true;rec.leftoverDay=x.leftoverDay;rec.leftoverWeek=x.leftoverWeek||x.week||1;}return rec;});
   S.week=null;finalizeWeek(recipes,new Date().toISOString().slice(0,10),false);
-  (t.manual||[]).forEach(m=>S.week.shopping.push(JSON.parse(JSON.stringify(m))));libPrice(S.week.shopping);S.week.planApproved=false;save();tab='plan';render();toast(`Loaded ${t.name}`);
+  (t.manual||[]).forEach(m=>S.week.shopping.push(JSON.parse(JSON.stringify(m))));libPrice(S.week.shopping);S.week.planApproved=false;editingTemplateIndex=forEdit?i:null;save();tab='plan';render();toast(forEdit?`Editing ${t.name}`:`Loaded ${t.name}`);
+}
+function editPlanTemplate(i){loadPlanTemplate(i,true);}
+function renamePlanTemplate(i){
+  const t=S.planTemplates[i];if(!t)return;const entered=prompt('Template name',t.name);if(entered==null)return;const name=entered.trim();if(!name){toast('Enter a template name');return;}if(S.planTemplates.some((x,j)=>j!==i&&x.name.toLowerCase()===name.toLowerCase())){toast('A template already uses that name');return;}t.name=name;save();render();toast('Template renamed');
+}
+function updateEditingTemplate(){
+  const i=editingTemplateIndex,t=S.planTemplates[i];if(!t||!S.week)return;S.planTemplates[i]=currentPlanTemplate(t.name);save();editingTemplateIndex=null;render();toast('Template updated');
+}
+function duplicatePlanTemplate(i){
+  const t=S.planTemplates[i];if(!t)return;const copy=JSON.parse(JSON.stringify(t));let base=`${t.name} copy`,name=base,n=2;while(S.planTemplates.some(x=>x.name.toLowerCase()===name.toLowerCase()))name=`${base} ${n++}`;copy.name=name;copy.createdAt=Date.now();S.planTemplates.push(copy);save();render();toast('Template duplicated');
 }
 function deletePlanTemplate(i){
-  const t=(S.planTemplates||[])[i];if(!t||!confirm(`Delete the template “${t.name}”?`))return;S.planTemplates.splice(i,1);save();render();toast('Template deleted');
+  const t=(S.planTemplates||[])[i];if(!t||!confirm(`Delete the template “${t.name}”?`))return;S.planTemplates.splice(i,1);if(editingTemplateIndex===i)editingTemplateIndex=null;else if(editingTemplateIndex>i)editingTemplateIndex--;save();render();toast('Template deleted');
 }
 
 function setMealServings(i, delta){
@@ -3429,7 +3441,7 @@ function viewList(){
   return `
   <button class="btn" onclick="openShopMode()">🛒 Shop mode — ${items.length-doneCount} item${items.length-doneCount!==1?'s':''} to get</button>
   <p class="sub" style="text-align:center;margin:8px 0 2px">Big tap targets, aisle order, screen stays awake${doneCount?` · ${doneCount} already in cart`:''}</p>
-  <div class="card"><h2>Add grocery item</h2><p class="sub">Add household items that aren’t part of a recipe.</p><div class="addrow"><input id="gin" placeholder="Item"><input id="giq" class="small" placeholder="Qty" inputmode="decimal"><input id="giu" class="small" placeholder="Unit"><button onclick="addGroceryItem()" aria-label="Add grocery">+</button></div><input id="gino" placeholder="Optional note" style="width:100%;margin-top:8px;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:var(--card)"></div>
+  <div class="card"><h2>Add grocery item</h2><p class="sub">Add food, household, personal-care, or pet items.</p><div class="addrow"><input id="gin" placeholder="Item"><input id="giq" class="small" placeholder="Qty" inputmode="decimal"><input id="giu" class="small" placeholder="Unit"><button onclick="addGroceryItem()" aria-label="Add grocery">+</button></div><div class="row" style="margin-top:8px"><select id="gic" style="flex:1;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:var(--card)">${['Pantry','Produce','Bakery','Meat & Seafood','Dairy & Eggs','Frozen','Household','Personal Care','Pet','Other'].map(c=>`<option>${c}</option>`).join('')}</select><input id="gino" placeholder="Optional note" style="flex:2;min-width:0;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:var(--card)"></div></div>
   ${pantryHits.length? `<div class="card carry"><h2>♻️ From your pantry (don't buy)</h2>
     <p class="sub" style="margin:6px 0 0">${pantryHits.map(it=>`${round2(it.fromPantry)} ${esc(it.unit)} ${esc(it.name)}`).join(' · ')}</p></div>`:''}
   <div class="receipt">
@@ -3450,19 +3462,19 @@ function viewList(){
   <p class="sub" style="padding:0 6px">${items.every(it=>it.userPriced)? 'Prices are from your saved receipts.' : (items.some(it=>it.userPriced)? 'Mix of your receipt prices and built-in estimates (estimates marked ~).' : 'Prices are built-in estimates — scan a receipt in the Pantry tab for real local prices.')} Per-dinner ≈ <b class="mono">${money(tBest/Math.max(1,w.recipes.reduce((s,r)=>s+(r.double?2:1),0)))}</b>.</p>`;
 }
 function addGroceryItem(){
-  const name=$('#gin').value.trim(),need=Math.max(.01,parseFloat($('#giq').value)||1),unit=$('#giu').value.trim()||'count',note=$('#gino').value.trim();
+  const name=$('#gin').value.trim(),need=Math.max(.01,parseFloat($('#giq').value)||1),unit=$('#giu').value.trim()||'count',note=$('#gino').value.trim(),chosenCat=$('#gic').value;
   if(!name){toast('Enter an item name');return;}
   const base=PRICES[normName(name)];
-  const it={name,need,gross:need,unit,category:base?.cat||'Pantry',usedBy:[],fromPantry:0,manual:true,note,done:false};
+  const it={name,need,gross:need,unit,category:base?.cat||chosenCat,usedBy:[],fromPantry:0,manual:true,note,done:false};
   libPrice([it]);S.week.shopping.push(it);save();render();toast('Grocery item added');
 }
 function openGroceryEdit(i){
   const it=S.week?.shopping[i];if(!it)return;
-  $('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Close</button></div><div class="day">Edit grocery</div><h2 class="disp" style="font-size:21px">${esc(it.name)}</h2><label class="frmlbl">Quantity<input id="geq" type="number" min="0.01" step="0.01" value="${round2(it.need)}" style="width:100%;margin-top:5px;padding:11px;border:1.5px solid var(--line);border-radius:10px"></label><label class="frmlbl" style="margin-top:10px">Note<input id="gen" value="${esc(it.note||'')}" placeholder="Optional note" style="width:100%;margin-top:5px;padding:11px;border:1.5px solid var(--line);border-radius:10px"></label><button class="btn" style="margin-top:14px" onclick="saveGroceryEdit(${i})">Save changes</button>${it.manual?`<button class="btn ghost" style="margin-top:9px;color:var(--danger);border-color:var(--danger)" onclick="deleteGroceryItem(${i})">Delete item</button>`:''}</div>`;
+  $('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Close</button></div><div class="day">Edit grocery</div><h2 class="disp" style="font-size:21px">${esc(it.name)}</h2><label class="frmlbl">Quantity<input id="geq" type="number" min="0.01" step="0.01" value="${round2(it.need)}" style="width:100%;margin-top:5px;padding:11px;border:1.5px solid var(--line);border-radius:10px"></label>${it.manual?`<label class="frmlbl" style="margin-top:10px">Category<select id="gec" style="width:100%;margin-top:5px;padding:11px;border:1.5px solid var(--line);border-radius:10px;background:var(--card)">${['Pantry','Produce','Bakery','Meat & Seafood','Dairy & Eggs','Frozen','Household','Personal Care','Pet','Other'].map(c=>`<option ${it.category===c?'selected':''}>${c}</option>`).join('')}</select></label>`:''}<label class="frmlbl" style="margin-top:10px">Note<input id="gen" value="${esc(it.note||'')}" placeholder="Optional note" style="width:100%;margin-top:5px;padding:11px;border:1.5px solid var(--line);border-radius:10px"></label><button class="btn" style="margin-top:14px" onclick="saveGroceryEdit(${i})">Save changes</button>${it.manual?`<button class="btn ghost" style="margin-top:9px;color:var(--danger);border-color:var(--danger)" onclick="deleteGroceryItem(${i})">Delete item</button>`:''}</div>`;
   $('#sheet').classList.add('show');$('#sheet').scrollTop=0;
 }
 function saveGroceryEdit(i){
-  const it=S.week?.shopping[i];if(!it)return;it.need=Math.max(.01,parseFloat($('#geq').value)||it.need);it.gross=it.need;it.note=$('#gen').value.trim();
+  const it=S.week?.shopping[i];if(!it)return;it.need=Math.max(.01,parseFloat($('#geq').value)||it.need);it.gross=it.need;it.note=$('#gen').value.trim();if(it.manual&&$('#gec'))it.category=$('#gec').value;
   if(it.pkgQty){it.packs=Math.max(1,Math.ceil(it.need/it.pkgQty));it.leftover=round2(it.packs*it.pkgQty-it.need);}save();closeSheet();render();toast('Grocery updated');
 }
 function deleteGroceryItem(i){if(!S.week?.shopping[i]?.manual)return;S.week.shopping.splice(i,1);save();closeSheet();render();toast('Grocery removed');}

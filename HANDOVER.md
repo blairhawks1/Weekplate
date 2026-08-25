@@ -2,7 +2,9 @@
 
 **What it is:** a single-file, offline-first meal-planning web app. One `index.html` containing all HTML, CSS, JS, a 150-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
 
-**Current version:** v38 (shown as a badge next to the logo, and in the Guide footer).
+**Current version:** v39 (shown as a badge next to the logo, and in the Guide footer).
+
+**v39:** expanded saved-plan management with content editing, renaming, and one-tap duplication. Manually added grocery items can now be assigned or moved among all food aisles plus Household, Personal Care, Pet, and Other; those categories flow into the regular list, Shop mode, print/share output, and saved templates.
 
 **v38:** added pantry-first planning with Normal, Use soon, and Urgent priorities, a one-tap priority build, selected-pantry recipe filtering, and used/missed results. Also added offline recipe importing from pasted text: common ingredient and direction sections are parsed, known ingredients are matched to the price/nutrition catalog, and the result opens in the existing editable custom-recipe form for validation before saving.
 
