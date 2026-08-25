@@ -148,9 +148,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;heigh
 .recipe .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .recipe .usesbar{background:var(--leaf-bg);padding:8px 16px;font-size:12px;color:var(--spruce-deep);border-top:1px solid var(--line)}
 .recipe .usesbar.alt{background:var(--squash-bg);color:#8A5717}
-.schedulebar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#F8FAF6;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.schedulebar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 16px;background:#F8FAF6;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
 .schedulebar button{font-weight:800;color:var(--spruce);padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card)}
-.schedulebar label{display:flex;align-items:center;gap:6px;flex:1}.schedulebar select{min-width:0;flex:1;padding:7px;border:1px solid var(--line);border-radius:9px;background:var(--card);font-size:12px;font-weight:700;color:var(--ink)}
+.schedulebar label{display:flex;align-items:center;gap:6px;flex:1;min-width:125px}.schedulebar select{min-width:0;flex:1;padding:7px;border:1px solid var(--line);border-radius:9px;background:var(--card);font-size:12px;font-weight:700;color:var(--ink)}
 .recipe .foot{display:flex;border-top:1px solid var(--line)}
 .recipe .foot button{flex:1;padding:11px;font-size:13px;font-weight:700;color:var(--spruce)}
 .recipe .foot button+button{border-left:1px solid var(--line)}
@@ -408,7 +408,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v39</span></h1>
+    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v40</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -1462,6 +1462,7 @@ function libSwap(i, maxOverride){
   const rec = libRecipeObj(r, oldRec.day, scale);
   if(oldRec.double){ rec.double=true; rec.leftoverDay=oldRec.leftoverDay; }
   if(oldRec.locked) rec.locked = oldRec.locked;
+  rec.week=oldRec.week||1;rec.leftoverWeek=oldRec.leftoverWeek;rec.cook=oldRec.cook||'';
   w.recipes[i] = rec;
   finalizeWeek(w.recipes, w.weekOf, false);
   toast('Recipe swapped');
@@ -1791,7 +1792,7 @@ function buildPDFDoc(){
     d.text(M,y+17,d.wrap(r.title,CW,14,true)[0],{size:14,bold:true,color:ink});
     const uses=w.shopping.filter(it=>it.fromPantry>0&&it.usedBy&&it.usedBy.includes(r.day)).map(it=>it.name);
     const nu=recipeNutrition(r);
-    let meta=((r.prepMin||0)+(r.cookMin||0))+' min   \u00B7   '+(r.ingredients||[]).length+' ingredients'+(nu.cal?('   \u00B7   ~'+nu.cal+' cal \u00B7 '+nu.protein+'P/'+nu.carbs+'C/'+nu.fat+'F per serv'):'');
+    let meta=((r.prepMin||0)+(r.cookMin||0))+' min   \u00B7   '+(r.ingredients||[]).length+' ingredients'+(r.cook?('   \u00B7   cook: '+r.cook):'')+(nu.cal?('   \u00B7   ~'+nu.cal+' cal \u00B7 '+nu.protein+'P/'+nu.carbs+'C/'+nu.fat+'F per serv'):'');
     if(uses.length) meta+='   \u00B7   from pantry: '+uses.slice(0,2).join(', ');
     if(r.offFor&&r.offFor.length){
       const alt=(w.alts||[]).find(a=>a.nights.includes(r.day));
@@ -1806,7 +1807,7 @@ function buildPDFDoc(){
   /* one page per recipe */
   w.recipes.forEach(r=>{
     d.addPage(); let y=64;
-    d.text(M,y,((w.horizon||1)>1?('WEEK '+(r.week||1)+' \u00B7 '):'')+r.day.toUpperCase()+(r.double?' + '+String(r.leftoverDay||'').toUpperCase()+' (LEFTOVERS)':'')+'   \u00B7   SERVES '+(r.servings||w.servings),{size:10,bold:true,color:squash}); y+=22;
+    d.text(M,y,((w.horizon||1)>1?('WEEK '+(r.week||1)+' \u00B7 '):'')+r.day.toUpperCase()+(r.double?' + '+String(r.leftoverDay||'').toUpperCase()+' (LEFTOVERS)':'')+'   \u00B7   SERVES '+(r.servings||w.servings)+(r.cook?'   \u00B7   COOK: '+r.cook.toUpperCase():''),{size:10,bold:true,color:squash}); y+=22;
     d.wrap(r.title,CW,20,true).forEach(l=>{ d.text(M,y,l,{size:20,bold:true,color:spruce}); y+=23; });
     y+=2;
     const nu2=recipeNutrition(r);
@@ -2542,13 +2543,15 @@ function buildSharePayload(){
   const customsUsed=(S.customRecipes||[]).filter(cr=>
     w.recipes.some(r=>r.title===cr.t) || (w.alts||[]).some(a=>a.rec.title===cr.t));
   return {
-    v:3, weekOf:w.weekOf, servings:w.servings, horizon:w.horizon||1,
-    // one entry per cooked recipe: title, day, week, servings, double flag, locked
-    r: w.recipes.map(r=>[r.title, r.day, r.week||1, r.servings||w.servings, r.double?1:0]),
+    v:4, weekOf:w.weekOf, servings:w.servings, horizon:w.horizon||1,
+    // one entry per cooked recipe: title, day, week, servings, double flag, assigned cook
+    r: w.recipes.map(r=>[r.title, r.day, r.week||1, r.servings||w.servings, r.double?1:0, r.cook||'']),
     // alternates: person, title, nights, servings
     a: (w.alts||[]).map(x=>[x.person, x.rec.title, x.nights, x.rec.altServes]),
     // the pantry that was subtracted, so her shopping list matches yours exactly
     pn: (w.shopping||[]).filter(i=>i.fromPantry>0).map(i=>[i.name,i.fromPantry,i.unit]),
+    // clean read-only grocery snapshot; checked-off state deliberately excluded
+    gl: (w.shopping||[]).filter(i=>!i.pantryOnly&&i.need>0.01).map(i=>[i.name,i.need,i.unit,i.category,i.note||'']),
     pb: S.priceBook||{},          // so her prices match yours
     cx: customsUsed,              // custom recipes used this week
     hh: S.household.map(p=>({name:p.name,age:p.age,diet:p.diet||[]})),
@@ -2568,14 +2571,14 @@ async function sharePlanLink(){
   const isFile = location.protocol === 'file:' || !location.origin || location.origin==='null';
   $('#sheet').innerHTML = `<div class="sheet-in">
     <div class="sheet-bar"><button onclick="closeSheet()">✕ Close</button></div>
-    <h2 class="disp" style="font-size:19px">Send this week to another phone</h2>
-    <p class="sub">Opens WeekPlate on their device with your exact plan, recipes, and shopping list — including your receipt prices. Their own pantry and settings stay untouched.</p>
-    ${isFile? `<div class="err">This copy isn't running from a web address, so the link won't work for anyone else. Deploy to Netlify first, then share from there.</div>`:''}
-    ${size>7000? `<div class="err">This link is long (${size} characters). It should still work, but if their browser rejects it, turn off "include my prices" and resend.</div>`:''}
+    <h2 class="disp" style="font-size:19px">Share a read-only plan</h2>
+    <p class="sub">The link opens a clean snapshot of your dinners, assigned cooks, and grocery list. They can view it without changing your plan, or save a separate copy in their own WeekPlate.</p>
+    ${isFile? `<div class="err">This copy isn't running from a web address, so the link won't work for anyone else. Open the published WeekPlate site first, then share from there.</div>`:''}
+    ${size>7000? `<div class="err">This snapshot is detailed, so the link is long (${size} characters). Most messaging apps support it; if one rejects it, use Copy link and paste it into an email.</div>`:''}
     <button class="btn" onclick="doShareLink('${esc(url).replace(/'/g,"\\'")}')">📤 Share link</button>
     <button class="btn ghost" style="margin-top:10px" onclick="navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('shareUrl').value).then(()=>toast('Link copied')).catch(()=>toast('Tap the box, Select All, Copy'))">Copy link</button>
     <textarea id="shareUrl" readonly onclick="this.select()" style="width:100%;height:90px;margin-top:12px;font:10px ui-monospace,monospace;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:var(--card)">${esc(url)}</textarea>
-    <p class="sub" style="margin-top:10px"><b>What syncs:</b> the plan, recipes, and shopping list — a snapshot, sent once.<br><b>What doesn't:</b> check-offs are per-phone. If she shops, she checks off on hers; you won't see it on yours. Send a fresh link whenever the plan changes.</p>
+    <p class="sub" style="margin-top:10px"><b>What’s shared:</b> a read-only snapshot of the plan and list.<br><b>What stays private:</b> pantry contents, allergens, history, and checked-off items. Send a fresh link whenever the plan changes.</p>
   </div>`;
   $('#sheet').classList.add('show'); $('#sheet').scrollTop=0;
 }
@@ -2584,6 +2587,25 @@ function doShareLink(url){
   if(navigator.share){ navigator.share({title, text:'Our meal plan this week:', url}).catch(()=>{}); return; }
   if(navigator.clipboard){ navigator.clipboard.writeText(url).then(()=>toast('Link copied')).catch(()=>toast('Copy it from the box below')); return; }
   toast('Copy the link from the box below');
+}
+
+function mealCalendarDate(r,extraDays=0){
+  const base=new Date(`${S.week.weekOf}T12:00:00`), mondayOffset=(base.getDay()+6)%7;
+  base.setDate(base.getDate()-mondayOffset+DAYS.indexOf(r.day)+7*((r.week||1)-1)+extraDays);
+  return `${base.getFullYear()}${String(base.getMonth()+1).padStart(2,'0')}${String(base.getDate()).padStart(2,'0')}`;
+}
+function icsText(s){return String(s||'').replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');}
+async function exportCalendar(){
+  if(!S.week){toast('Plan a week first');return;}
+  const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');let events=[];
+  S.week.recipes.forEach((r,i)=>{
+    const desc=`${r.servings||S.week.servings} servings${r.cook?` · Cook: ${r.cook}`:''}${r.double?' · Cook double for leftovers':''}`;
+    events.push(['BEGIN:VEVENT',`UID:${S.week.weekOf}-${r.week||1}-${i}@weekplate`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${mealCalendarDate(r)}`,`DTEND;VALUE=DATE:${mealCalendarDate(r,1)}`,`SUMMARY:${icsText('Dinner: '+r.title)}`,`DESCRIPTION:${icsText(desc)}`,'END:VEVENT'].join('\r\n'));
+    if(r.leftoverDay){const lr=Object.assign({},r,{day:r.leftoverDay,week:r.leftoverWeek||r.week||1});events.push(['BEGIN:VEVENT',`UID:${S.week.weekOf}-${r.week||1}-${i}-leftovers@weekplate`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${mealCalendarDate(lr)}`,`DTEND;VALUE=DATE:${mealCalendarDate(lr,1)}`,`SUMMARY:${icsText('Dinner: '+r.title+' leftovers')}`,'END:VEVENT'].join('\r\n'));}
+  });
+  const blob=new Blob([`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//WeekPlate//Meal Plan//EN\r\nCALSCALE:GREGORIAN\r\n${events.join('\r\n')}\r\nEND:VCALENDAR\r\n`],{type:'text/calendar'}),file=new File([blob],`weekplate-${S.week.weekOf}.ics`,{type:'text/calendar'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:'WeekPlate dinner calendar'});return;}catch(e){if(e.name==='AbortError')return;}}
+  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Calendar file downloaded');
 }
 
 /* ---- receiving end ---- */
@@ -2603,14 +2625,16 @@ async function checkSharedLink(){
 function showImportPrompt(pl){
   const nights = pl.r.reduce((s,x)=>s+(x[4]?2:1),0);
   const who = pl.from? esc(pl.from) : 'Someone';
+  const groceries=(pl.gl||[]), cats=[...new Set(groceries.map(x=>x[3]||'Other'))];
   $('#sheet').innerHTML = `<div class="sheet-in">
     <div class="sheet-bar"><button onclick="dismissImport()">✕ Not now</button></div>
-    <div class="day">SHARED PLAN</div>
+    <div class="day">READ-ONLY SHARED PLAN</div>
     <h2 class="disp" style="font-size:20px">${who} sent you a meal plan</h2>
     <p class="sub">${nights} dinners · ${pl.servings} servings · week of ${esc(pl.weekOf)}${pl.horizon>1?' (2 weeks)':''}</p>
-    <div class="card" style="margin-top:10px">${pl.r.map(x=>`<div class="pitem"><span class="nm">${esc(x[1])}${pl.horizon>1?` (W${x[2]})`:''}<br><span class="qty">${esc(x[0])}${x[4]?' · cook ×2':''}</span></span></div>`).join('')}</div>
-    <button class="btn" style="margin-top:12px" onclick="acceptShared()">Load this plan</button>
-    <p class="sub" style="margin-top:10px">This replaces the plan currently showing in your app. Your pantry, settings, favorites, and history are <b>not</b> touched.${(pl.pb&&Object.keys(pl.pb).length)?' Their saved store prices will be merged into yours.':''}</p>
+    <div class="card" style="margin-top:10px"><h2>Dinners</h2>${pl.r.map(x=>`<div class="pitem"><span class="nm">${esc(x[1])}${pl.horizon>1?` (W${x[2]})`:''}<br><span class="qty">${esc(x[0])}${x[4]?' · cook ×2':''}${x[5]?` · Cook: ${esc(x[5])}`:''}</span></span></div>`).join('')}</div>
+    ${groceries.length?`<div class="card"><h2>Grocery list</h2>${cats.map(c=>`<div class="day" style="margin-top:12px">${esc(c)}</div>${groceries.filter(x=>(x[3]||'Other')===c).map(x=>`<div class="pitem"><span class="nm">${esc(x[0])}${x[4]?`<br><span class="qty">${esc(x[4])}</span>`:''}</span><span class="qty mono">${round2(x[1])} ${esc(x[2])}</span></div>`).join('')}`).join('')}</div>`:''}
+    <button class="btn" style="margin-top:12px" onclick="acceptShared()">Save a copy in my WeekPlate</button>
+    <p class="sub" style="margin-top:10px">Saving creates your own editable copy and replaces any plan currently showing. Your pantry, settings, favorites, and history remain untouched.${(pl.pb&&Object.keys(pl.pb).length)?' Shared store prices are added only where you do not already have one.':''}</p>
   </div>`;
   $('#sheet').classList.add('show'); $('#sheet').scrollTop=0;
   window._pendingShare = pl;
@@ -2627,11 +2651,11 @@ async function acceptShared(){
   if(pl.pb){ S.priceBook=S.priceBook||{};
     Object.entries(pl.pb).forEach(([k,v])=>{ if(!S.priceBook[k]) S.priceBook[k]=v; }); }
   // rebuild recipes exactly
-  const recipes = pl.r.map(([title,day,wk,serv,dbl])=>{
+  const recipes = pl.r.map(([title,day,wk,serv,dbl,cook])=>{
     const src = RECIPES.find(r=>r.t===title);
     if(!src) return null;
     const rec = libRecipeObj(src, day, serv/4);
-    rec.week = wk; rec.servings = serv;
+    rec.week = wk; rec.servings = serv; rec.cook=cook||'';
     if(dbl){ rec.double=true;
       const di=DAYS.indexOf(day);
       rec.leftoverDay = DAYS[(di+1)%7]; rec.leftoverWeek = ((di+1)>=7)? wk+1 : wk;
@@ -2983,7 +3007,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v39 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v40 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -3038,7 +3062,7 @@ function viewPlan(){
     if((w.horizon||1)>1 && rw!==calWeek){ calWeek=rw; h+=`<div class="calweek">Week ${rw}</div>`; }
     const mins=(r.prepMin||0)+(r.cookMin||0);
     const lim=nightLimitFor(r);
-    h += `<button class="calday" onclick="document.getElementById('meal${i}').scrollIntoView({behavior:'smooth',block:'start'})"><span class="cd">${esc(r.day)}${r.locked?' · 🔒':''}</span><span class="ct">${esc(r.title)}</span><span class="cm"><span>${mins} min</span><span>≈${money(calCost(r))}</span>${lim?`<span>≤ ${lim} min</span>`:''}${r.double?'<span>Cook ×2</span>':''}</span></button>`;
+    h += `<button class="calday" onclick="document.getElementById('meal${i}').scrollIntoView({behavior:'smooth',block:'start'})"><span class="cd">${esc(r.day)}${r.locked?' · 🔒':''}</span><span class="ct">${esc(r.title)}</span><span class="cm"><span>${mins} min</span><span>≈${money(calCost(r))}</span>${r.cook?`<span>Cook: ${esc(r.cook)}</span>`:''}${lim?`<span>≤ ${lim} min</span>`:''}${r.double?'<span>Cook ×2</span>':''}</span></button>`;
     if(r.leftoverDay) h += `<button class="calday leftover" onclick="document.getElementById('meal${i}').scrollIntoView({behavior:'smooth',block:'start'})"><span class="cd">${esc(r.leftoverDay)}</span><span class="ct">Leftovers · ${esc(r.title)}</span><span class="cm"><span>No cooking</span><span>Already covered</span></span></button>`;
   });
   h += `</div></section>`;
@@ -3074,6 +3098,7 @@ function viewPlan(){
       <div class="schedulebar">
         <button onclick="openMoveMeal(${i})">Move day</button>
         <label>Time limit <select onchange="setNightLimit(${i},+this.value)">${[[0,'Default'],[15,'15 min'],[20,'20 min'],[30,'30 min'],[45,'45 min'],[60,'60 min']].map(([v,l])=>`<option value="${v}" ${nightLimitFor(r)===v?'selected':''}>${l}</option>`).join('')}</select></label>
+        <label>Cook <select onchange="setMealCook(${i},this.value)"><option value="">Anyone</option>${S.household.map((p,pi)=>{const n=personLabel(p,pi);return `<option value="${esc(n)}" ${r.cook===n?'selected':''}>${esc(n)}</option>`;}).join('')}</select></label>
       </div>
       <ul class="ing-list" id="ing${i}">
         ${(r.ingredients||[]).map(x=>`<li><span class="q mono">${round2(x.qty)} ${esc(x.unit)}</span> ${esc(x.name)}</li>`).join('')}
@@ -3104,7 +3129,8 @@ function viewPlan(){
     h += `<div class="card carry"><h2>🛒 One shop, two weeks</h2>
       <p class="sub" style="margin:6px 0 0">This list covers all ${w.recipes.reduce((s,r)=>s+(r.double?2:1),0)} dinners.${shared.length? ` ${shared.length} bulk item${shared.length>1?'s':''} get used across both weeks: ${shared.slice(0,5).map(it=>esc(it.name)).join(', ')}${shared.length>5?'…':''}` : ''}</p></div>`;
   }
-  h += `<button class="btn ghost" style="margin-top:14px" onclick="sharePlanLink()">📲 Send this plan to another phone</button>`;
+  h += `<button class="btn ghost" style="margin-top:14px" onclick="exportCalendar()">📅 Add dinners to Apple or Google Calendar</button>`;
+  h += `<button class="btn ghost" style="margin-top:10px" onclick="sharePlanLink()">📲 Share read-only plan &amp; grocery list</button>`;
   h += `<button class="btn ghost" style="margin-top:10px" onclick="makePDF()">🖨 Print ${((w.horizon||1)>1)?'2 weeks':'week'} to PDF</button>
         <button class="btn ghost" style="margin-top:10px" onclick="exportForPDF()">📋 Get PDF via Claude chat</button>`;
   if(w.mode==='lib') h += `<button class="btn ghost" style="margin-top:10px" onclick="libReshuffle()">↻ Reshuffle unlocked dinners</button>`;
@@ -3128,7 +3154,7 @@ function savePlanTemplate(){
   save();closeSheet();render();toast('Plan template saved');
 }
 function currentPlanTemplate(name){
-  const w=S.week;return {name,createdAt:Date.now(),horizon:w.horizon||1,dinners:S.dinners,servings:w.servings,maxMinutes:S.maxMinutes,budgetCap:S.budgetCap,leftoverNights:S.leftoverNights,store:S.store,nightLimits:JSON.parse(JSON.stringify(S.nightLimits||{})),items:w.recipes.map(r=>({title:r.title,day:r.day,week:r.week||1,servings:r.servings||w.servings,double:!!r.double,leftoverDay:r.leftoverDay||'',leftoverWeek:r.leftoverWeek||r.week||1})),manual:JSON.parse(JSON.stringify((w.shopping||[]).filter(i=>i.manual).map(i=>({name:i.name,need:i.need,gross:i.need,unit:i.unit,category:i.category,usedBy:[],fromPantry:0,manual:true,note:i.note||'',done:false}))))};
+  const w=S.week;return {name,createdAt:Date.now(),horizon:w.horizon||1,dinners:S.dinners,servings:w.servings,maxMinutes:S.maxMinutes,budgetCap:S.budgetCap,leftoverNights:S.leftoverNights,store:S.store,nightLimits:JSON.parse(JSON.stringify(S.nightLimits||{})),items:w.recipes.map(r=>({title:r.title,day:r.day,week:r.week||1,servings:r.servings||w.servings,double:!!r.double,leftoverDay:r.leftoverDay||'',leftoverWeek:r.leftoverWeek||r.week||1,cook:r.cook||''})),manual:JSON.parse(JSON.stringify((w.shopping||[]).filter(i=>i.manual).map(i=>({name:i.name,need:i.need,gross:i.need,unit:i.unit,category:i.category,usedBy:[],fromPantry:0,manual:true,note:i.note||'',done:false}))))};
 }
 function loadPlanTemplate(i,forEdit=false){
   const t=(S.planTemplates||[])[i];if(!t)return;
@@ -3137,7 +3163,7 @@ function loadPlanTemplate(i,forEdit=false){
   if(unsafe.length){toast(`Template conflicts with current allergens or dislikes: ${unsafe[0].title}`);return;}
   if(S.week&&!confirm(`${forEdit?'Load this template for editing and replace':'Replace'} the current plan with “${t.name}”?`))return;
   S.horizon=t.horizon||1;S.dinners=t.dinners||Math.min(7,t.items.length);S.maxMinutes=t.maxMinutes||S.maxMinutes;S.budgetCap=t.budgetCap||0;S.leftoverNights=t.leftoverNights||0;S.store=t.store||S.store;S.nightLimits=JSON.parse(JSON.stringify(t.nightLimits||{}));
-  const recipes=t.items.map(x=>{const src=RECIPES.find(r=>r.t===x.title),rec=libRecipeObj(src,x.day,(x.servings||t.servings||targetServings())/4);rec.week=x.week||1;if(x.double){rec.double=true;rec.leftoverDay=x.leftoverDay;rec.leftoverWeek=x.leftoverWeek||x.week||1;}return rec;});
+  const recipes=t.items.map(x=>{const src=RECIPES.find(r=>r.t===x.title),rec=libRecipeObj(src,x.day,(x.servings||t.servings||targetServings())/4);rec.week=x.week||1;rec.cook=x.cook||'';if(x.double){rec.double=true;rec.leftoverDay=x.leftoverDay;rec.leftoverWeek=x.leftoverWeek||x.week||1;}return rec;});
   S.week=null;finalizeWeek(recipes,new Date().toISOString().slice(0,10),false);
   (t.manual||[]).forEach(m=>S.week.shopping.push(JSON.parse(JSON.stringify(m))));libPrice(S.week.shopping);S.week.planApproved=false;editingTemplateIndex=forEdit?i:null;save();tab='plan';render();toast(forEdit?`Editing ${t.name}`:`Loaded ${t.name}`);
 }
@@ -3162,6 +3188,7 @@ function setMealServings(i, delta){
   rebuildWeekShopping(); S.week.planApproved=false;
   save(); render();
 }
+function setMealCook(i,cook){const r=S.week?.recipes[i];if(!r)return;r.cook=cook||'';save();render();toast(r.cook?`${r.cook} assigned to cook`:'Cook assignment cleared');}
 function rebuildWeekShopping(){
   if(!S.week) return;
   const manual=(S.week.shopping||[]).filter(i=>i.manual);
@@ -3403,7 +3430,7 @@ function choosePlanMeal(title){
 function replacePlanMeal(i,title){
   const src=RECIPES.find(r=>r.t===title),old=S.week?.recipes[i];if(!src||!old)return;
   if(S.week.recipes.some((r,x)=>x!==i&&r.title===title)){toast('That recipe is already in this plan');return;}
-  const rec=libRecipeObj(src,old.day,(old.servings||S.week.servings)/4);rec.week=old.week||1;
+  const rec=libRecipeObj(src,old.day,(old.servings||S.week.servings)/4);rec.week=old.week||1;rec.cook=old.cook||'';
   if(old.double){rec.double=true;rec.leftoverDay=old.leftoverDay;rec.leftoverWeek=old.leftoverWeek;}
   S.week.recipes[i]=rec;finalizeWeek(S.week.recipes,S.week.weekOf,false);closeSheet();tab='plan';render();toast('Recipe added to plan');
 }

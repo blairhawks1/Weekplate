@@ -2,7 +2,9 @@
 
 **What it is:** a single-file, offline-first meal-planning web app. One `index.html` containing all HTML, CSS, JS, a 150-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
 
-**Current version:** v39 (shown as a badge next to the logo, and in the Guide footer).
+**Current version:** v40 (shown as a badge next to the logo, and in the Guide footer).
+
+**v40:** added standards-based `.ics` calendar export for Apple Calendar, Google Calendar, and other calendar apps, including cook and leftover details. Each planned meal can be assigned to a household cook, and assignments survive recipe swaps, saved templates, and shared plans. Shared links now open as clean read-only dinner and categorized-grocery snapshots, with an optional action for the recipient to save a separate editable copy.
 
 **v39:** expanded saved-plan management with content editing, renaming, and one-tap duplication. Manually added grocery items can now be assigned or moved among all food aisles plus Household, Personal Care, Pet, and Other; those categories flow into the regular list, Shop mode, print/share output, and saved templates.
 
