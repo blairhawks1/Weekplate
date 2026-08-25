@@ -383,7 +383,7 @@ nav button{font-size:10px;min-height:48px}
 #onboarding.show{display:block}
 .onboard-in{width:min(100%,560px);min-height:100%;margin:0 auto;padding:calc(16px + var(--safe-t)) 18px calc(110px + var(--safe-b))}
 .onboard-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
-.onboard-brand{font-family:Georgia,serif;font-size:20px;font-weight:800;color:var(--spruce-deep)}
+.onboard-brand{font-family:Georgia,serif;font-size:16.5px;font-weight:800;color:var(--spruce-deep);white-space:nowrap}
 .onboard-brand span{color:var(--squash)}
 .onboard-skip{font-size:13px;font-weight:700;color:var(--muted);background:none;padding:8px}
 .onboard-progress{display:flex;gap:6px;flex:1;max-width:180px}
@@ -408,7 +408,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Sous Chef <span>Shuffle</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v41</span></h1>
+    <h1>Sous Chef <span>Shuffle</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v42</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -3007,7 +3007,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">Sous Chef Shuffle v41 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">Sous Chef Shuffle v42 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -3652,7 +3652,7 @@ function renderOnboarding(){
       <div class="onboard-panel"><h3>Weekly grocery target</h3><div style="display:flex;align-items:center;gap:7px"><span class="mono" style="font-size:18px">$</span><input aria-label="Weekly grocery target" type="number" inputmode="numeric" min="0" step="5" value="${S.budgetCap||''}" placeholder="Optional" style="width:100%;padding:12px;border-radius:11px;border:1.5px solid var(--line);background:var(--card);font-weight:700" onchange="S.budgetCap=Math.max(0,parseInt(this.value)||0);save();renderOnboarding()"></div></div>
       <div class="onboard-summary"><div><small>Household</small><b>${S.household.length} ${S.household.length===1?'person':'people'}</b></div><div><small>Plan</small><b>${S.dinners} dinners · ${S.horizon} ${S.horizon===1?'week':'weeks'}</b></div><div><small>Time</small><b>Up to ${S.maxMinutes} min</b></div><div><small>Store</small><b>${storeName}</b></div></div>`;
   }
-  el.innerHTML=`<div class="onboard-in" tabindex="-1"><div class="onboard-top"><div class="onboard-brand">Week<span>Plate</span></div>${progress}<button class="onboard-skip" onclick="skipOnboarding()">Skip</button></div>${body}</div>
+  el.innerHTML=`<div class="onboard-in" tabindex="-1"><div class="onboard-top"><div class="onboard-brand">Sous Chef <span>Shuffle</span></div>${progress}<button class="onboard-skip" onclick="skipOnboarding()">Skip</button></div>${body}</div>
     <div class="onboard-actions"><div class="onboard-actions-in">${onboardStep?'<button class="btn ghost back" onclick="onboardBack()">Back</button>':''}<button class="btn" onclick="${onboardStep===3?'finishOnboarding()':'onboardNext()'}">${onboardStep===0?'Get started':onboardStep===3?'Save & build my plan':'Continue'}</button></div></div>`;
 }
 

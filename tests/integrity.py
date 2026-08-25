@@ -73,8 +73,10 @@ for title in steps:
         errors.append(f"{title}: steps have no matching recipe")
 
 assert not errors, "\n".join(errors)
-assert "Sous Chef Shuffle v41" in HTML
+assert "Sous Chef Shuffle v42" in HTML
 assert "WeekPlate v" not in HTML
+assert 'class="onboard-brand">Week' not in HTML
+assert 'class="onboard-brand">Sous Chef <span>Shuffle</span>' in HTML
 assert "let STORE_KEY='weekplate-state'" in HTML  # preserve existing users' on-device data
 assert 'id="allergens"' in HTML
 assert "p.allergens" in HTML
