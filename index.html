@@ -219,6 +219,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;heigh
 .recipecard h3{margin:0 0 4px;font-size:16px;color:var(--spruce-deep)}
 .recipecard .meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
 .recipefilters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.recipefilters input{grid-column:1/-1}.recipefilters input,.recipefilters select{padding:11px;border:1.5px solid var(--line);border-radius:11px;background:var(--card);font-size:14px;min-width:0}
+.prep-summary{background:linear-gradient(135deg,var(--spruce-deep),var(--spruce));color:#fff;border-radius:14px;padding:15px;margin:10px 0}.prep-summary h2{margin:0 0 4px;color:#fff}.prep-summary .sub{color:#DDE9E1;margin:0}.prep-progress{height:8px;background:rgba(255,255,255,.2);border-radius:5px;margin-top:12px;overflow:hidden}.prep-progress span{display:block;height:100%;background:var(--squash);border-radius:5px}
+.prepgroup{margin:16px 0 6px;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--squash)}.preptask{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px dashed var(--line)}.preptask input{width:21px;height:21px;accent-color:var(--spruce);flex:none;margin-top:1px}.preptask.done{opacity:.5}.preptask.done .prepname{text-decoration:line-through}.prepname{display:block;font-weight:750;font-size:14px}.prepmeta{display:block;font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}.prepstore{display:block;font-size:11px;color:var(--spruce);margin-top:4px}
 
 /* ---------- pantry ---------- */
 .pitem{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}
@@ -408,7 +410,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Sous Chef <span>Shuffle</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v42</span></h1>
+    <h1>Sous Chef <span>Shuffle</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v43</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -3007,7 +3009,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">Sous Chef Shuffle v42 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">Sous Chef Shuffle v43 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -3129,7 +3131,9 @@ function viewPlan(){
     h += `<div class="card carry"><h2>🛒 One shop, two weeks</h2>
       <p class="sub" style="margin:6px 0 0">This list covers all ${w.recipes.reduce((s,r)=>s+(r.double?2:1),0)} dinners.${shared.length? ` ${shared.length} bulk item${shared.length>1?'s':''} get used across both weeks: ${shared.slice(0,5).map(it=>esc(it.name)).join(', ')}${shared.length>5?'…':''}` : ''}</p></div>`;
   }
-  h += `<button class="btn ghost" style="margin-top:14px" onclick="exportCalendar()">📅 Add dinners to Apple or Google Calendar</button>`;
+  const prep=sundayPrepTasks(),prepDone=prep.filter(t=>(w.prepDone||{})[t.id]).length;
+  h += `<button class="btn ghost" style="margin-top:14px" onclick="openSundayPrep()">🥕 Sunday Prep Mode — ${prepDone}/${prep.length} done</button>`;
+  h += `<button class="btn ghost" style="margin-top:10px" onclick="exportCalendar()">📅 Add dinners to Apple or Google Calendar</button>`;
   h += `<button class="btn ghost" style="margin-top:10px" onclick="sharePlanLink()">📲 Share read-only plan &amp; grocery list</button>`;
   h += `<button class="btn ghost" style="margin-top:10px" onclick="makePDF()">🖨 Print ${((w.horizon||1)>1)?'2 weeks':'week'} to PDF</button>
         <button class="btn ghost" style="margin-top:10px" onclick="exportForPDF()">📋 Get PDF via Claude chat</button>`;
@@ -3139,6 +3143,35 @@ function viewPlan(){
   h += `<button class="btn warn" style="margin-top:10px" onclick="finishWeek()">✓ Finish ${((w.horizon||1)>1)?'both weeks':'week'} — save leftovers to pantry</button>
         <button class="btn ghost" style="margin-top:10px" onclick="if(confirm('Discard this plan?')){S.week=null;editingTemplateIndex=null;save();render();}">Discard plan</button>`;
   return h;
+}
+
+function sundayPrepTasks(){
+  if(!S.week)return [];
+  const rules=[
+    {re:/\bonion\b/,group:'Produce',verb:'Dice',min:4,store:'Refrigerate airtight with a dry paper towel; best within 3 days.'},
+    {re:/bell pepper|poblano|jalape/,group:'Produce',verb:'Wash, core, and chop',min:4,store:'Refrigerate airtight with a dry paper towel; best within 3 days.'},
+    {re:/carrot|celery/,exclude:/peas and carrots/,group:'Produce',verb:'Wash and chop',min:4,store:'Refrigerate submerged in cold water; refresh the water every few days.'},
+    {re:/broccoli|cauliflower/,group:'Produce',verb:'Wash and cut into florets',min:5,store:'Refrigerate completely dry in a ventilated container; use within 3 days.'},
+    {re:/cabbage|kale/,group:'Produce',verb:'Wash, dry, and chop',min:5,store:'Refrigerate airtight with a dry paper towel; use within 3–4 days.'},
+    {re:/\bgarlic\b/,group:'Produce',verb:'Peel and mince',min:3,store:'Refrigerate airtight and use within 2–3 days; do not store in oil.'},
+    {re:/chicken|ground beef|ground turkey|pork|steak|sausage|salmon|shrimp|tilapia|cod/,exclude:/broth|rotisserie/,group:'Proteins',verb:'Portion and label',min:4,store:'Refrigerate portions for the next 1–2 days; freeze later meals and thaw in the refrigerator.'},
+    {re:/\brice\b|quinoa|couscous|farro/,exclude:/noodle/,group:'Grains',verb:'Measure and label',min:2,store:'Keep dry portions sealed. If batch-cooking, cool promptly and refrigerate no more than 3–4 days.'}
+  ];
+  const map={};
+  S.week.recipes.forEach(r=>(r.ingredients||[]).forEach(x=>{
+    const name=String(x.name||''),lower=name.toLowerCase(),rule=rules.find(z=>z.re.test(lower)&&(!z.exclude||!z.exclude.test(lower)));if(!rule)return;
+    const key=`${rule.group}|${normName(name)}|${x.unit}`,use=`${(S.week.horizon||1)>1?`W${r.week||1} · `:''}${r.day}: ${r.title}`;
+    if(!map[key])map[key]={id:key.toLowerCase().replace(/[^a-z0-9]+/g,'-'),group:rule.group,verb:rule.verb,name,qty:0,unit:x.unit,minutes:rule.min,storage:rule.store,uses:[]};
+    map[key].qty=round2(map[key].qty+(Number(x.qty)||0));if(!map[key].uses.includes(use))map[key].uses.push(use);
+  }));
+  const order={Produce:0,Proteins:1,Grains:2};return Object.values(map).sort((a,b)=>order[a.group]-order[b.group]||a.name.localeCompare(b.name));
+}
+function togglePrepTask(id,done){const y=$('#sheet').scrollTop;S.week.prepDone=S.week.prepDone||{};if(done)S.week.prepDone[id]=true;else delete S.week.prepDone[id];save();openSundayPrep(y);}
+function resetSundayPrep(){if(!S.week||!confirm('Clear all Sunday Prep checkmarks for this plan?'))return;S.week.prepDone={};save();openSundayPrep();}
+function openSundayPrep(scrollTo=0){
+  if(!S.week){toast('Plan a week first');return;}const tasks=sundayPrepTasks(),done=S.week.prepDone||{},n=tasks.filter(t=>done[t.id]).length,mins=tasks.filter(t=>!done[t.id]).reduce((s,t)=>s+t.minutes,0),groups=[...new Set(tasks.map(t=>t.group))];
+  $('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet();render()">✕ Close</button></div><div class="day">SUNDAY PREP MODE</div><div class="prep-summary"><h2>${n===tasks.length&&tasks.length?'Prep complete':'Set up a calmer week'}</h2><p class="sub">${tasks.length?`${n} of ${tasks.length} tasks done · about ${mins} active minute${mins===1?'':'s'} left`:'No safe make-ahead tasks were found in this plan.'}</p>${tasks.length?`<div class="prep-progress"><span style="width:${Math.round(100*n/tasks.length)}%"></span></div>`:''}</div><div class="card carry"><b>Food-safety note</b><p class="sub" style="margin:4px 0 0">Keep raw proteins separate, refrigerate prepared food promptly, and freeze portions intended for later in the week. Storage guidance below is intentionally conservative.</p></div>${groups.map(g=>`<div class="prepgroup">${esc(g)}</div>${tasks.filter(t=>t.group===g).map(t=>`<label class="preptask ${done[t.id]?'done':''}"><input type="checkbox" ${done[t.id]?'checked':''} onchange="togglePrepTask('${t.id}',this.checked)"><span><span class="prepname">${esc(t.verb)} ${esc(t.name)} <span class="qty mono">· ${round2(t.qty)} ${esc(t.unit)}</span></span><span class="prepmeta">For ${t.uses.map(esc).join(' · ')}</span><span class="prepstore">${esc(t.storage)}</span></span></label>`).join('')}`).join('')}${tasks.length?`<button class="btn ghost" style="margin-top:18px" onclick="resetSundayPrep()">Reset prep checklist</button>`:''}</div>`;
+  $('#sheet').classList.add('show');$('#sheet').scrollTop=scrollTo;
 }
 
 function openSavePlanTemplate(){

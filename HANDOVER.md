@@ -2,7 +2,9 @@
 
 **What it is:** a single-file, offline-first meal-planning web app. One `index.html` containing all HTML, CSS, JS, a 150-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
 
-**Current version:** v42 (shown as a badge next to the logo, and in the Guide footer).
+**Current version:** v43 (shown as a badge next to the logo, and in the Guide footer).
+
+**v43:** added Sunday Prep Mode. It derives a conservative make-ahead checklist from the active plan, consolidates repeated ingredients and quantities, groups tasks into Produce, Proteins, and Grains, identifies every dinner using each item, estimates remaining active time, provides task-specific storage guidance, and persists checkmarks with the current week. Raw-protein and cooked-grain guidance includes conservative refrigeration/freezing reminders.
 
 **v42:** corrected the separate onboarding header brand, which still used split `Week<span>Plate</span>` markup after the v41 rebrand. Added an integrity assertion covering that independently rendered header so future naming changes cannot miss it.
 
