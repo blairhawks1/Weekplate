@@ -408,7 +408,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v37</span></h1>
+    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v38</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -511,7 +511,7 @@ function migrate(){
   S.mealFeedback=S.mealFeedback||{};
   S.planTemplates=S.planTemplates||[];
   if(S.week && typeof S.week.planApproved==='undefined') S.week.planApproved=true;
-  S.pantry=(S.pantry||[]).map(p=>Object.assign({addedAt:null,useBy:null},p));
+  S.pantry=(S.pantry||[]).map(p=>Object.assign({addedAt:null,useBy:null,priority:'normal'},p));
   // v24: the unauthenticated browser-only AI path could never work safely.
   // Keep planning private, dependable, and fully offline.
   S.mode='lib';
@@ -1583,12 +1583,13 @@ function pantryExpiryLabel(p){
 function pantryUrgency(name){
   const p=(S.pantry||[]).find(x=>normName(x.name)===normName(name));
   if(!p) return 0;
+  const priorityBoost=p.priority==='urgent'?8:p.priority==='soon'?4:0;
   const days=pantryDaysLeft(p);
-  if(days==null) return 0;
-  if(days<=0) return 7;
-  if(days<=2) return 5;
-  if(days<=5) return 3;
-  return 0;
+  if(days==null) return priorityBoost;
+  if(days<=0) return 7+priorityBoost;
+  if(days<=2) return 5+priorityBoost;
+  if(days<=5) return 3+priorityBoost;
+  return priorityBoost;
 }
 
 function consolidate(recipes){
@@ -1672,7 +1673,7 @@ function completeWeek(){
     // skip trivially small leftovers of cheap staples? keep all, user can delete
     const pi = S.pantry.find(p=> normName(p.name)===normName(it.name) && p.unit===it.unit);
     if(pi){ pi.qty=round2(pi.qty+it.leftover); pi.addedAt=isoToday(); pi.useBy=addDaysISO(defaultShelfDays(it.name)); }
-    else S.pantry.push({name:it.name,qty:it.leftover,unit:it.unit,addedAt:isoToday(),useBy:addDaysISO(defaultShelfDays(it.name))});
+    else S.pantry.push({name:it.name,qty:it.leftover,unit:it.unit,addedAt:isoToday(),useBy:addDaysISO(defaultShelfDays(it.name)),priority:'normal'});
     added++;
   });
   S.lastTitles = w.recipes.map(r=>r.title);
@@ -2403,6 +2404,7 @@ function saveCustomRecipe(){
   d.ing = d.ing.filter(([n,q])=>n && q>0);
   if(!d.t){ toast('Give it a name'); return; }
   if(!d.ing.length){ toast('Add at least one ingredient'); return; }
+  const unknown=d.ing.find(([n])=>!PRICES[n]);if(unknown){toast(`Choose a known ingredient for “${unknown[0]}”`);return;}
   if(d._edit==null && RECIPES.some(r=>r.t===d.t)){ toast('That name is taken — pick another'); return; }
   const clean = {t:d.t,m:d.m,p:d.p,tags:d.tags,ing:d.ing,steps:d.steps,custom:true};
   if(d._edit!=null){
@@ -2983,7 +2985,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v37 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v38 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -3041,6 +3043,12 @@ function viewPlan(){
     if(r.leftoverDay) h += `<button class="calday leftover" onclick="document.getElementById('meal${i}').scrollIntoView({behavior:'smooth',block:'start'})"><span class="cd">${esc(r.leftoverDay)}</span><span class="ct">Leftovers · ${esc(r.title)}</span><span class="cm"><span>No cooking</span><span>Already covered</span></span></button>`;
   });
   h += `</div></section>`;
+  const priorityPantry=S.pantry.filter(p=>p.priority&&p.priority!=='normal');
+  if(priorityPantry.length){
+    const used=priorityPantry.filter(p=>w.recipes.some(r=>(r.ingredients||[]).some(x=>normName(x.name)===normName(p.name))));
+    const missed=priorityPantry.filter(p=>!used.includes(p));
+    h+=`<div class="card carry"><h2>🥫 Pantry-first results</h2><p class="sub" style="margin:6px 0 0">${used.length?`Using: ${used.map(p=>esc(p.name)).join(', ')}.`:''}${missed.length?` Couldn’t fit: ${missed.map(p=>esc(p.name)).join(', ')}—try the Recipes pantry filter or loosen a restriction.`:''}</p></div>`;
+  }
   let lastWk = 0;
   h += w.recipes.map((r,i)=>{
     let divider = '';
@@ -3337,20 +3345,38 @@ function viewRecipes(){
   if(recipeBrowseFilter==='vegetarian') list=list.filter(r=>r.tags.includes('vegetarian'));
   if(recipeBrowseFilter==='family') list=list.filter(r=>r.tags.includes('kid'));
   if(recipeBrowseFilter==='safe') list=list.filter(r=>passesAvoid(r,avoidList())&&S.household.every(p=>!violatesPerson(r,p)));
-  const pantryScore=r=>r.ing.filter(([n])=>S.pantry.some(p=>normName(p.name)===normName(n))).length;
+  if(recipeBrowseFilter==='priority') list=list.filter(r=>r.ing.some(([n])=>S.pantry.some(p=>p.priority!=='normal'&&normName(p.name)===normName(n))));
+  const pantryScore=r=>r.ing.reduce((s,[n])=>{const p=S.pantry.find(p=>normName(p.name)===normName(n));return s+(p?(p.priority==='urgent'?4:p.priority==='soon'?2:1):0);},0);
   if(recipeBrowseSort==='time') list.sort((a,b)=>effectiveMinutes(a)-effectiveMinutes(b));
   else if(recipeBrowseSort==='cost') list.sort((a,b)=>recipeCost4(a)-recipeCost4(b));
   else if(recipeBrowseSort==='pantry') list.sort((a,b)=>pantryScore(b)-pantryScore(a));
   else if(recipeBrowseSort==='rating') list.sort((a,b)=>((S.mealFeedback||{})[b.t]?.rating==='love'?1:0)-((S.mealFeedback||{})[a.t]?.rating==='love'?1:0));
   else list.sort((a,b)=>a.t.localeCompare(b.t));
-  return `<div class="row"><div><h2 style="margin:2px 0">Recipes</h2><p class="sub" style="margin:2px 0">Browse all ${RECIPES.length} offline dinners</p></div><span class="pill leaf" id="recipeCount">${list.length}</span></div>
-    <div class="recipefilters"><input id="recipeSearch" type="search" placeholder="Search recipes or ingredients" oninput="filterRecipeCards(this.value)"><select onchange="recipeBrowseFilter=this.value;render()">${[['all','All recipes'],['quick','30 min or less'],['favorites','Favorites'],['family','Kid-friendly'],['vegetarian','Vegetarian'],['safe','Fits everyone']].map(([v,l])=>`<option value="${v}" ${recipeBrowseFilter===v?'selected':''}>${l}</option>`).join('')}</select><select onchange="recipeBrowseSort=this.value;render()">${[['match','A–Z'],['time','Shortest time'],['cost','Lowest cost'],['pantry','Best pantry match'],['rating','Family loves']].map(([v,l])=>`<option value="${v}" ${recipeBrowseSort===v?'selected':''}>${l}</option>`).join('')}</select></div>
+  return `<div class="row"><div><h2 style="margin:2px 0">Recipes</h2><p class="sub" style="margin:2px 0">Browse all ${RECIPES.length} offline dinners</p></div><button class="chip on" onclick="openRecipeImport()">Import</button></div>
+    <div class="recipefilters"><input id="recipeSearch" type="search" placeholder="Search recipes or ingredients" oninput="filterRecipeCards(this.value)"><select onchange="recipeBrowseFilter=this.value;render()">${[['all','All recipes'],['priority','Uses selected pantry'],['quick','30 min or less'],['favorites','Favorites'],['family','Kid-friendly'],['vegetarian','Vegetarian'],['safe','Fits everyone']].map(([v,l])=>`<option value="${v}" ${recipeBrowseFilter===v?'selected':''}>${l}</option>`).join('')}</select><select onchange="recipeBrowseSort=this.value;render()">${[['match','A–Z'],['time','Shortest time'],['cost','Lowest cost'],['pantry','Best pantry match'],['rating','Family loves']].map(([v,l])=>`<option value="${v}" ${recipeBrowseSort===v?'selected':''}>${l}</option>`).join('')}</select></div><div class="row" style="margin-bottom:4px"><span class="sub" style="margin:0">Showing</span><span class="pill leaf" id="recipeCount">${list.length}</span></div>
     <div id="recipeResults">${list.map(r=>{const safe=passesAvoid(r,avoidList())&&S.household.every(p=>!violatesPerson(r,p)),fb=(S.mealFeedback||{})[r.t],ps=pantryScore(r);return `<div class="card recipecard" data-search="${esc((r.t+' '+r.ing.map(x=>x[0]).join(' ')).toLowerCase())}"><div><h3>${esc(r.t)} ${(S.favorites||[]).includes(r.t)?'♥':''}</h3><p class="sub" style="margin:0">${effectiveMinutes(r)} min · about ${money(recipeCost4(r))} for 4${ps?` · ${ps} pantry match${ps>1?'es':''}`:''}</p><div class="meta"><span class="pill ${safe?'leaf':'sq'}">${safe?'Fits household':'Check restrictions'}</span>${fb?.rating==='love'?'<span class="pill leaf">Family loves</span>':''}${r.tags.includes('vegetarian')?'<span class="pill est">Vegetarian</span>':''}</div></div><button class="chip" onclick="openLibraryRecipe('${esc(r.t).replace(/'/g,"\\'")}')">View</button></div>`}).join('')}</div>`;
 }
 function filterRecipeCards(q){
   q=String(q||'').trim().toLowerCase(); let n=0;
   document.querySelectorAll('#recipeResults .recipecard').forEach(el=>{const show=!q||el.dataset.search.includes(q);el.style.display=show?'grid':'none';if(show)n++;});
   const c=$('#recipeCount');if(c)c.textContent=n;
+}
+function openRecipeImport(){
+  $('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Close</button></div><div class="day">Import recipe</div><h2 class="disp" style="font-size:22px">Paste a recipe</h2><p class="sub">Copy the recipe text from a website, note, email, or cookbook. Include the title, ingredients, and directions. WeekPlate will match known ingredients, then let you review everything before saving.</p><textarea id="importText" placeholder="Recipe title\n\nIngredients\n1 lb chicken breast\n...\n\nDirections\n1. ..." style="width:100%;height:310px;padding:12px;border:1.5px solid var(--line);border-radius:11px;background:var(--card);font:13px ui-monospace,monospace"></textarea><button class="btn" style="margin-top:12px" onclick="parseRecipeImport()">Convert &amp; review</button><p class="sub" style="margin-top:10px">WeekPlate can’t reliably fetch recipe URLs directly because many sites block browser access. Open the page, copy its recipe text, and paste it here.</p></div>`;
+  $('#sheet').classList.add('show');$('#sheet').scrollTop=0;
+}
+function parseRecipeImport(){
+  const raw=$('#importText').value.trim();if(!raw){toast('Paste a recipe first');return;}
+  const lines=raw.split(/\r?\n/).map(s=>s.trim()).filter(Boolean), lower=lines.map(s=>s.toLowerCase());
+  const ingAt=lower.findIndex(s=>/^ingredients?\s*:?$/.test(s)), stepAt=lower.findIndex(s=>/^(directions?|instructions?|method|steps?)\s*:?$/.test(s));
+  const title=(lines.find((s,i)=>i!==ingAt&&i!==stepAt&&!/^https?:/i.test(s))||'Imported recipe').replace(/^#+\s*/, '').slice(0,80);
+  const ingLines=ingAt>=0?lines.slice(ingAt+1,stepAt>ingAt?stepAt:lines.length):(stepAt>0?lines.slice(1,stepAt):lines.slice(1));
+  const keys=Object.keys(PRICES).sort((a,b)=>b.length-a.length), ing=[],unknown=[];
+  ingLines.forEach(line=>{const l=line.toLowerCase().replace(/[•*]/g,' ').trim();let name=keys.find(k=>l.includes(k))||matchIngredient(line);if(!name){unknown.push(line);return;}const m=l.match(/(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)/);let q=1;if(m){if(m[1].includes(' ')){const [a,b]=m[1].split(/\s+/),[n,d]=b.split('/').map(Number);q=Number(a)+n/d;}else if(m[1].includes('/')){const [n,d]=m[1].split('/').map(Number);q=n/d;}else q=Number(m[1]);}if(!ing.some(x=>x[0]===name))ing.push([name,round2(q||1),PRICES[name].u]);});
+  const steps=(stepAt>=0?lines.slice(stepAt+1):[]).map(s=>s.replace(/^\d+[.)]\s*|^[-•*]\s*/, '').trim()).filter(Boolean);
+  const tm=raw.match(/(?:total\s+time|time)\s*:?\s*(\d+)\s*(?:min|minutes)/i)||raw.match(/(\d+)\s*(?:min|minutes)/i);
+  crDraft={t:title,m:tm?Math.max(5,+tm[1]):30,p:'veg',tags:[],ing:ing.length?ing:[['',1,'count']],steps,custom:true,_edit:null};
+  renderRecipeForm();$('#sheet').scrollTop=0;toast(unknown.length?`${ing.length} ingredients matched · ${unknown.length} need review`:`${ing.length} ingredients matched`);
 }
 function openLibraryRecipe(title){
   const src=RECIPES.find(r=>r.t===title);if(!src)return;
@@ -3444,16 +3470,18 @@ function deleteGroceryItem(i){if(!S.week?.shopping[i]?.manual)return;S.week.shop
 /* ----- pantry ----- */
 function viewPantry(){
   const ready = (S.pantry||[]).length ? makeNowMatches().filter(m=>!m.missing.length).length : 0;
+  const priorityCount=(S.pantry||[]).filter(p=>p.priority&&p.priority!=='normal').length;
   let h = `<button class="btn" onclick="openMakeNow()">🍳 What can I make right now?${ready? ` — ${ready} ready`:''}</button>
   <p class="sub" style="text-align:center;margin:8px 0 2px">Cook straight from your pantry, no shopping</p>
+  ${priorityCount?`<button class="btn ghost" style="margin-top:10px" onclick="buildPantryFirst()">Build a plan around ${priorityCount} selected item${priorityCount===1?'':'s'}</button>`:''}
   <div class="card">
     <h2>Pantry & carryover</h2>
-    <p class="sub">Leftovers land here when you finish a week. Next week's plan uses these up first.</p>`;
+    <p class="sub">Choose “Use soon” or “Urgent” to make an ingredient pull harder in the next plan.</p>`;
   if(!S.pantry.length) h += `<div class="empty" style="padding:22px"><div class="big">🫙</div><p>Nothing on hand yet.</p></div>`;
   else h += S.pantry.slice().sort((a,b)=>(pantryDaysLeft(a)??9999)-(pantryDaysLeft(b)??9999)).map(p=>{
     const i=S.pantry.indexOf(p), days=pantryDaysLeft(p);
     return `<div class="pitem ${days!=null&&days<0?'expired':days!=null&&days<=3?'expiring':''}">
-      <span class="nm">${esc(p.name)}<span class="expiry ${days!=null&&days<0?'late':days!=null&&days<=3?'soon':''}">${esc(pantryExpiryLabel(p))}</span></span>
+      <span class="nm">${esc(p.name)}<span class="expiry ${days!=null&&days<0?'late':days!=null&&days<=3?'soon':''}">${esc(pantryExpiryLabel(p))}</span><select aria-label="Planning priority for ${esc(p.name)}" onchange="S.pantry[${i}].priority=this.value;save();render()" style="margin-top:5px;padding:5px;border:1px solid var(--line);border-radius:8px;background:var(--card);font-size:11px"><option value="normal" ${(p.priority||'normal')==='normal'?'selected':''}>Normal</option><option value="soon" ${p.priority==='soon'?'selected':''}>Use soon</option><option value="urgent" ${p.priority==='urgent'?'selected':''}>Urgent</option></select></span>
       <span><span class="qty mono">${round2(p.qty)} ${esc(p.unit)}</span><br><input class="expirydate" type="date" aria-label="Use-by date for ${esc(p.name)}" value="${esc(p.useBy||'')}" onchange="S.pantry[${i}].useBy=this.value||null;save();render()"></span>
       <button class="x" aria-label="Remove ${esc(p.name)}" onclick="S.pantry.splice(${i},1);save();render()">✕</button>
     </div>`;
@@ -3493,8 +3521,13 @@ function addPantry(){
   if(!n||!q){ toast('Enter a name and quantity'); return; }
   const existing=S.pantry.find(p=>normName(p.name)===normName(n)&&p.unit===u);
   if(existing){ existing.qty=round2(existing.qty+q); existing.addedAt=isoToday(); existing.useBy=addDaysISO(defaultShelfDays(n)); }
-  else S.pantry.push({name:n,qty:round2(q),unit:u,addedAt:isoToday(),useBy:addDaysISO(defaultShelfDays(n))});
+  else S.pantry.push({name:n,qty:round2(q),unit:u,addedAt:isoToday(),useBy:addDaysISO(defaultShelfDays(n)),priority:'normal'});
   save(); render();
+}
+function buildPantryFirst(){
+  const picked=S.pantry.filter(p=>p.priority&&p.priority!=='normal');if(!picked.length){toast('Mark pantry items Use soon or Urgent first');return;}
+  if(S.week&&!confirm('Replace the current plan with a pantry-first plan?'))return;
+  S.week=null;tab='plan';render();generateWeek();
 }
 
 const DIETS = ['Vegetarian','Vegan','Gluten-free','Dairy-free','Low-carb','Kid-friendly'];
