@@ -73,7 +73,9 @@ for title in steps:
         errors.append(f"{title}: steps have no matching recipe")
 
 assert not errors, "\n".join(errors)
-assert "WeekPlate v40" in HTML
+assert "Sous Chef Shuffle v41" in HTML
+assert "WeekPlate v" not in HTML
+assert "let STORE_KEY='weekplate-state'" in HTML  # preserve existing users' on-device data
 assert 'id="allergens"' in HTML
 assert "p.allergens" in HTML
 assert "openMoveMeal" in HTML and "setNightLimit" in HTML
@@ -83,10 +85,10 @@ assert "savePlanTemplate" in HTML and "loadPlanTemplate" in HTML and "planTempla
 assert "editPlanTemplate" in HTML and "renamePlanTemplate" in HTML and "duplicatePlanTemplate" in HTML
 assert "Personal Care" in HTML and "Household supplies" in HTML and 'id="gic"' in HTML
 assert "exportCalendar" in HTML and "mealCalendarDate" in HTML and "text/calendar" in HTML
-assert "setMealCook" in HTML and "READ-ONLY SHARED PLAN" in HTML and "Save a copy in my WeekPlate" in HTML
+assert "setMealCook" in HTML and "READ-ONLY SHARED PLAN" in HTML and "Save a copy in my Sous Chef Shuffle" in HTML
 assert "buildPantryFirst" in HTML and "parseRecipeImport" in HTML and "priorityPantry" in HTML
 assert "user-scalable=no" not in HTML
 root = pathlib.Path(__file__).parent.parent
-for required in ["manifest.webmanifest", "service-worker.js", "icons/icon-192.png", "icons/icon-512.png", "icons/home-hero.jpg", "icons/og-weekplate.jpg", "tests/planner-simulation.html"]:
+for required in ["manifest.webmanifest", "service-worker.js", "icons/icon-192.png", "icons/icon-512.png", "icons/home-hero.jpg", "icons/og-sous-chef-shuffle.png", "tests/planner-simulation.html"]:
     assert (root / required).exists(), f"missing {required}"
-print(f"WeekPlate integrity checks passed: {len(recipes)} recipes, {len(prices)} prices, {len(nutrition)} nutrition entries.")
+print(f"Sous Chef Shuffle integrity checks passed: {len(recipes)} recipes, {len(prices)} prices, {len(nutrition)} nutrition entries.")

@@ -5,21 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="WeekPlate">
+<meta name="apple-mobile-web-app-title" content="Sous Chef Shuffle">
 <meta name="theme-color" content="#F3F5EF">
 <meta name="description" content="Private, device-local weekly meal planning, grocery pricing, and pantry tracking.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://weekplate.blairhawks1.workers.dev/">
-<meta property="og:title" content="WeekPlate — Dinner decisions, handled.">
+<meta property="og:title" content="Sous Chef Shuffle — Dinner decisions, handled.">
 <meta property="og:description" content="Build a family-ready meal plan, priced shopping list, and smarter pantry in one tap.">
-<meta property="og:image" content="https://weekplate.blairhawks1.workers.dev/icons/og-weekplate.jpg">
+<meta property="og:image" content="https://weekplate.blairhawks1.workers.dev/icons/og-sous-chef-shuffle.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="WeekPlate — Dinner decisions, handled.">
+<meta name="twitter:title" content="Sous Chef Shuffle — Dinner decisions, handled.">
 <meta name="twitter:description" content="Build a family-ready meal plan, priced shopping list, and smarter pantry in one tap.">
-<meta name="twitter:image" content="https://weekplate.blairhawks1.workers.dev/icons/og-weekplate.jpg">
+<meta name="twitter:image" content="https://weekplate.blairhawks1.workers.dev/icons/og-sous-chef-shuffle.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<title>WeekPlate — Dinner Prep Planner</title>
+<title>Sous Chef Shuffle — Dinner Prep Planner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Spline+Sans+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -50,7 +50,7 @@ button{touch-action:manipulation}
 /* ---------- shell ---------- */
 #app{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
 header{padding:calc(14px + var(--safe-t)) 18px 10px;display:flex;align-items:baseline;justify-content:space-between}
-header h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.3px;color:var(--spruce-deep)}
+header h1{margin:0;font-size:19.5px;font-weight:800;letter-spacing:-.3px;color:var(--spruce-deep);white-space:nowrap}
 header h1 span{color:var(--squash)}
 #weekLabel{font-size:12px;color:var(--muted)}
 main{flex:1;padding:0 14px calc(96px + var(--safe-b))}
@@ -408,7 +408,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Week<span>Plate</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v40</span></h1>
+    <h1>Sous Chef <span>Shuffle</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v41</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -552,7 +552,7 @@ try{
 function exportBackup(){
   const str = JSON.stringify(S);
   const blob = new Blob([str], {type:'application/json'});
-  const name = 'weekplate-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  const name = 'sous-chef-shuffle-backup-'+new Date().toISOString().slice(0,10)+'.json';
   try{
     const file = new File([blob], name, {type:'application/json'});
     if(navigator.canShare && navigator.canShare({files:[file]})){
@@ -1629,7 +1629,7 @@ function finishWeek(){
     <div class="chiprow" style="margin-top:10px"><label class="chip"><input type="checkbox" id="fbl${i}"> Took longer</label><label class="chip"><input type="checkbox" id="fbe${i}"> Too expensive</label>${r.double?`<label class="chip"><input type="checkbox" id="fbh${i}"> Reheated poorly</label>`:''}</div>
     <label class="frmlbl" style="margin-top:10px">Portion size<select id="fbp${i}" style="width:100%;margin-top:5px;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:var(--card)"><option value="right">About right</option><option value="small">Needed more</option><option value="large">Made too much</option></select></label>
   </div>`).join('');
-  $('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Not yet</button></div><div class="day">End-of-week check-in</div><h2 class="disp" style="font-size:22px">Help next week fit better</h2><p class="sub">A few quick notes teach WeekPlate what your family likes. Skip any meal you don’t want to rate.</p>${rows}<button class="btn" onclick="submitWeekFeedback()">Save feedback &amp; finish week</button><button class="btn ghost" style="margin-top:9px" onclick="closeSheet();completeWeek()">Skip feedback</button></div>`;
+  $('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Not yet</button></div><div class="day">End-of-week check-in</div><h2 class="disp" style="font-size:22px">Help next week fit better</h2><p class="sub">A few quick notes teach Sous Chef Shuffle what your family likes. Skip any meal you don’t want to rate.</p>${rows}<button class="btn" onclick="submitWeekFeedback()">Save feedback &amp; finish week</button><button class="btn ghost" style="margin-top:9px" onclick="closeSheet();completeWeek()">Skip feedback</button></div>`;
   $('#sheet').classList.add('show'); $('#sheet').scrollTop=0;
 }
 function submitWeekFeedback(){
@@ -1762,7 +1762,7 @@ function buildPDFDoc(){
   /* page 1: week calendar */
   d.addPage();
   d.rect(0,0,W,86,spruce,true);
-  d.text(M,38,'WeekPlate '+'\u2014'+' Dinner Plan',{size:22,bold:true,color:[255,255,255]});
+  d.text(M,38,'Sous Chef Shuffle '+'\u2014'+' Dinner Plan',{size:22,bold:true,color:[255,255,255]});
   const totalNights=w.recipes.reduce((s,r)=>s+(r.double?2:1),0);
   d.text(M,62,((w.horizon||1)>1?'2 weeks from ':'Week of ')+w.weekOf+'   \u00B7   '+w.servings+' servings   \u00B7   '+totalNights+' dinners   \u00B7   '+w.recipes.length+' cooks',{size:11,color:[255,255,255]});
   let y=122;
@@ -1894,7 +1894,7 @@ async function makePDF(){
   const bytes = new Uint8Array(s.length);
   for(let i=0;i<s.length;i++) bytes[i] = s.charCodeAt(i)&0xFF;
   const blob = new Blob([bytes],{type:'application/pdf'});
-  const name = 'weekplate-'+S.week.weekOf+'.pdf';
+  const name = 'sous-chef-shuffle-'+S.week.weekOf+'.pdf';
   // 1) native iOS share sheet (Save to Files / Print / AirDrop)
   try{
     const file = new File([blob], name, {type:'application/pdf'});
@@ -1958,7 +1958,7 @@ function printFallback(){
   if(!pv){ pv=document.createElement('div'); pv.id='printview'; document.body.appendChild(pv); }
   const items=w.shopping.filter(i=>!i.pantryOnly);
   pv.innerHTML = `
-    <h1>WeekPlate — Week of ${w.weekOf} (${w.servings} servings/dinner)</h1>
+    <h1>Sous Chef Shuffle — Week of ${w.weekOf} (${w.servings} servings/dinner)</h1>
     <table>${w.recipes.map(r=>`<tr><td><b>${esc(r.day)}</b></td><td>${esc(r.title)}</td><td>${(r.prepMin||0)+(r.cookMin||0)} min</td></tr>`).join('')}</table>
     ${w.recipes.map(r=>`<div class="pbreak">
       <h2>${esc(r.day)}: ${esc(r.title)}</h2>
@@ -1979,7 +1979,7 @@ function shareList(){
   const tW=items.reduce((s,i)=>s+(i.walmart!=null?i.walmart*i.packs:0),0);
   const tA=items.reduce((s,i)=>s+(i.aldi!=null?i.aldi*i.packs:0),0);
   const st=shopStore(); const lbl={}; aisleOrderFor(st).forEach(([c,l])=>lbl[c]=l);
-  let txt='WeekPlate shopping — week of '+w.weekOf+' ('+(st==='aldi'?'Aldi':'Walmart')+' aisle order)\n';
+  let txt='Sous Chef Shuffle shopping — week of '+w.weekOf+' ('+(st==='aldi'?'Aldi':'Walmart')+' aisle order)\n';
   let cat='';
   sortByAisle(items, st).forEach(it=>{
     if(it.category!==cat){ cat=it.category; txt+='\n'+(lbl[cat]||cat).toUpperCase()+'\n'; }
@@ -2572,8 +2572,8 @@ async function sharePlanLink(){
   $('#sheet').innerHTML = `<div class="sheet-in">
     <div class="sheet-bar"><button onclick="closeSheet()">✕ Close</button></div>
     <h2 class="disp" style="font-size:19px">Share a read-only plan</h2>
-    <p class="sub">The link opens a clean snapshot of your dinners, assigned cooks, and grocery list. They can view it without changing your plan, or save a separate copy in their own WeekPlate.</p>
-    ${isFile? `<div class="err">This copy isn't running from a web address, so the link won't work for anyone else. Open the published WeekPlate site first, then share from there.</div>`:''}
+    <p class="sub">The link opens a clean snapshot of your dinners, assigned cooks, and grocery list. They can view it without changing your plan, or save a separate copy in their own Sous Chef Shuffle.</p>
+    ${isFile? `<div class="err">This copy isn't running from a web address, so the link won't work for anyone else. Open the published Sous Chef Shuffle site first, then share from there.</div>`:''}
     ${size>7000? `<div class="err">This snapshot is detailed, so the link is long (${size} characters). Most messaging apps support it; if one rejects it, use Copy link and paste it into an email.</div>`:''}
     <button class="btn" onclick="doShareLink('${esc(url).replace(/'/g,"\\'")}')">📤 Share link</button>
     <button class="btn ghost" style="margin-top:10px" onclick="navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('shareUrl').value).then(()=>toast('Link copied')).catch(()=>toast('Tap the box, Select All, Copy'))">Copy link</button>
@@ -2583,7 +2583,7 @@ async function sharePlanLink(){
   $('#sheet').classList.add('show'); $('#sheet').scrollTop=0;
 }
 function doShareLink(url){
-  const title='WeekPlate — this week\u2019s dinners';
+  const title='Sous Chef Shuffle — this week\u2019s dinners';
   if(navigator.share){ navigator.share({title, text:'Our meal plan this week:', url}).catch(()=>{}); return; }
   if(navigator.clipboard){ navigator.clipboard.writeText(url).then(()=>toast('Link copied')).catch(()=>toast('Copy it from the box below')); return; }
   toast('Copy the link from the box below');
@@ -2600,11 +2600,11 @@ async function exportCalendar(){
   const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');let events=[];
   S.week.recipes.forEach((r,i)=>{
     const desc=`${r.servings||S.week.servings} servings${r.cook?` · Cook: ${r.cook}`:''}${r.double?' · Cook double for leftovers':''}`;
-    events.push(['BEGIN:VEVENT',`UID:${S.week.weekOf}-${r.week||1}-${i}@weekplate`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${mealCalendarDate(r)}`,`DTEND;VALUE=DATE:${mealCalendarDate(r,1)}`,`SUMMARY:${icsText('Dinner: '+r.title)}`,`DESCRIPTION:${icsText(desc)}`,'END:VEVENT'].join('\r\n'));
-    if(r.leftoverDay){const lr=Object.assign({},r,{day:r.leftoverDay,week:r.leftoverWeek||r.week||1});events.push(['BEGIN:VEVENT',`UID:${S.week.weekOf}-${r.week||1}-${i}-leftovers@weekplate`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${mealCalendarDate(lr)}`,`DTEND;VALUE=DATE:${mealCalendarDate(lr,1)}`,`SUMMARY:${icsText('Dinner: '+r.title+' leftovers')}`,'END:VEVENT'].join('\r\n'));}
+    events.push(['BEGIN:VEVENT',`UID:${S.week.weekOf}-${r.week||1}-${i}@sous-chef-shuffle`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${mealCalendarDate(r)}`,`DTEND;VALUE=DATE:${mealCalendarDate(r,1)}`,`SUMMARY:${icsText('Dinner: '+r.title)}`,`DESCRIPTION:${icsText(desc)}`,'END:VEVENT'].join('\r\n'));
+    if(r.leftoverDay){const lr=Object.assign({},r,{day:r.leftoverDay,week:r.leftoverWeek||r.week||1});events.push(['BEGIN:VEVENT',`UID:${S.week.weekOf}-${r.week||1}-${i}-leftovers@sous-chef-shuffle`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${mealCalendarDate(lr)}`,`DTEND;VALUE=DATE:${mealCalendarDate(lr,1)}`,`SUMMARY:${icsText('Dinner: '+r.title+' leftovers')}`,'END:VEVENT'].join('\r\n'));}
   });
-  const blob=new Blob([`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//WeekPlate//Meal Plan//EN\r\nCALSCALE:GREGORIAN\r\n${events.join('\r\n')}\r\nEND:VCALENDAR\r\n`],{type:'text/calendar'}),file=new File([blob],`weekplate-${S.week.weekOf}.ics`,{type:'text/calendar'});
-  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:'WeekPlate dinner calendar'});return;}catch(e){if(e.name==='AbortError')return;}}
+  const blob=new Blob([`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Sous Chef Shuffle//Meal Plan//EN\r\nCALSCALE:GREGORIAN\r\n${events.join('\r\n')}\r\nEND:VCALENDAR\r\n`],{type:'text/calendar'}),file=new File([blob],`sous-chef-shuffle-${S.week.weekOf}.ics`,{type:'text/calendar'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:'Sous Chef Shuffle dinner calendar'});return;}catch(e){if(e.name==='AbortError')return;}}
   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Calendar file downloaded');
 }
 
@@ -2633,7 +2633,7 @@ function showImportPrompt(pl){
     <p class="sub">${nights} dinners · ${pl.servings} servings · week of ${esc(pl.weekOf)}${pl.horizon>1?' (2 weeks)':''}</p>
     <div class="card" style="margin-top:10px"><h2>Dinners</h2>${pl.r.map(x=>`<div class="pitem"><span class="nm">${esc(x[1])}${pl.horizon>1?` (W${x[2]})`:''}<br><span class="qty">${esc(x[0])}${x[4]?' · cook ×2':''}${x[5]?` · Cook: ${esc(x[5])}`:''}</span></span></div>`).join('')}</div>
     ${groceries.length?`<div class="card"><h2>Grocery list</h2>${cats.map(c=>`<div class="day" style="margin-top:12px">${esc(c)}</div>${groceries.filter(x=>(x[3]||'Other')===c).map(x=>`<div class="pitem"><span class="nm">${esc(x[0])}${x[4]?`<br><span class="qty">${esc(x[4])}</span>`:''}</span><span class="qty mono">${round2(x[1])} ${esc(x[2])}</span></div>`).join('')}`).join('')}</div>`:''}
-    <button class="btn" style="margin-top:12px" onclick="acceptShared()">Save a copy in my WeekPlate</button>
+    <button class="btn" style="margin-top:12px" onclick="acceptShared()">Save a copy in my Sous Chef Shuffle</button>
     <p class="sub" style="margin-top:10px">Saving creates your own editable copy and replaces any plan currently showing. Your pantry, settings, favorites, and history remain untouched.${(pl.pb&&Object.keys(pl.pb).length)?' Shared store prices are added only where you do not already have one.':''}</p>
   </div>`;
   $('#sheet').classList.add('show'); $('#sheet').scrollTop=0;
@@ -2883,7 +2883,7 @@ function viewHelp(){
   const S_ = (t,body)=>`<details class="faq"><summary>${t}</summary><div class="faqbody">${body}</div></details>`;
   return `
   <div class="card" style="background:var(--spruce);border-color:var(--spruce)">
-    <h2 style="color:#fff">How WeekPlate works</h2>
+    <h2 style="color:#fff">How Sous Chef Shuffle works</h2>
     <p class="sub" style="color:#CFE0D5;margin:6px 0 0">Plan a week of dinners, get a priced shopping list, use up what's left over. Everything runs on your phone — no account, no internet needed after it loads.</p>
   </div>
 
@@ -2903,7 +2903,7 @@ function viewHelp(){
     <p class="sub">Your data lives <b>on this device only</b> — there's no cloud account. That's why it's private, and also why backups matter.</p>
     ${S_('Is my stuff actually being saved?',
       `Check the badge above, or <b>Setup → Saving &amp; backup</b>. It'll say one of:<br>
-       • <b>✓ Saving (this browser)</b> — normal when you run WeekPlate from a web address. You're good.<br>
+       • <b>✓ Saving (this browser)</b> — normal when you run Sous Chef Shuffle from a web address. You're good.<br>
        • <b>✓ Saving (in-app storage)</b> — you're inside the Claude app. Also fine.<br>
        • <b>⚠️ Not saving</b> — the viewer is blocking storage. Export a backup and open the app from its real web address instead.<br><br>
        It saves automatically as you go, and again the moment you switch apps or close the tab.`)}
@@ -2918,14 +2918,14 @@ function viewHelp(){
       `Clearing your browser's website data, or deleting the app from your Home Screen and clearing Safari. iOS can also purge storage for sites you haven't opened in a long time.<br><br>
        None of that touches an exported backup file, which is the whole point of having one.`)}
     ${S_('Add it to your Home Screen (recommended)',
-      `In Safari, tap the <b>Share</b> button → <b>Add to Home Screen</b>. WeekPlate then opens full-screen like a real app, and your data stays put between sessions.`)}
+      `In Safari, tap the <b>Share</b> button → <b>Add to Home Screen</b>. Sous Chef Shuffle then opens full-screen like a real app, and your data stays put between sessions.`)}
   </div>
 
   <div class="card">
     <h2>📲 Sharing with family</h2>
     ${S_('Send this week to another phone',
       `<b>Plan tab → 📲 Send this plan to another phone.</b> It makes a link — text it, AirDrop it, whatever. They open it and get your exact plan: same dinners, same days, same shopping list with your prices.<br><br>
-       Their pantry, settings, and favorites are <b>not</b> touched. Yours aren't either. Two people can each run their own WeekPlate off the same link and never step on each other.`)}
+       Their pantry, settings, and favorites are <b>not</b> touched. Yours aren't either. Two people can each run their own Sous Chef Shuffle off the same link and never step on each other.`)}
     ${S_('Taking turns shopping',
       `Whoever's shopping that week opens the shared link on their phone and uses Shop mode there. Next week, send a fresh link (or don't, if it's your turn).`)}
     ${S_('What does NOT sync',
@@ -2998,7 +2998,7 @@ function viewHelp(){
   <div class="card">
     <h2>🤔 Something's not working</h2>
     ${S_('A button does nothing',
-      `Most likely you're running WeekPlate inside a viewer that blocks files and storage. Put it on a real web address (Netlify Drop works, it's free and takes 30 seconds) and open it in Safari — downloads, sharing, screen-wake, and saving all work normally there.`)}
+      `Most likely you're running Sous Chef Shuffle inside a viewer that blocks files and storage. Put it on a real web address and open it in Safari — downloads, sharing, screen-wake, and saving all work normally there.`)}
     ${S_('"No dinners fit everyone"',
       `Your restrictions are stricter than the recipe library can satisfy. Loosen a diet, raise <b>Alt meals per restricted person</b>, or shorten the week. The message names who's causing the conflict.`)}
     ${S_('Recipes repeat too much',
@@ -3007,7 +3007,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">WeekPlate v40 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">Sous Chef Shuffle v41 · ${RECIPES.length} recipes built in · everything stays on your device</p>`;
 }
 
 /* ----- plan ----- */
@@ -3028,7 +3028,7 @@ function viewPlan(){
         <button class="btn" onclick="generateWeek()">Build my ${S.horizon>1?'2-week':'weekly'} plan</button>
       </div>
     </section>
-    <div class="homestats" aria-label="WeekPlate highlights">
+    <div class="homestats" aria-label="Sous Chef Shuffle highlights">
       <div class="homestat"><b>${RECIPES.length}</b><span>tested dinners</span></div>
       <div class="homestat"><b>${S.dinners*(S.horizon||1)}</b><span>nights planned</span></div>
       <div class="homestat"><b>On-device</b><span>private by design</span></div>
@@ -3401,7 +3401,7 @@ function filterRecipeCards(q){
   const c=$('#recipeCount');if(c)c.textContent=n;
 }
 function openRecipeImport(){
-  $('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Close</button></div><div class="day">Import recipe</div><h2 class="disp" style="font-size:22px">Paste a recipe</h2><p class="sub">Copy the recipe text from a website, note, email, or cookbook. Include the title, ingredients, and directions. WeekPlate will match known ingredients, then let you review everything before saving.</p><textarea id="importText" placeholder="Recipe title\n\nIngredients\n1 lb chicken breast\n...\n\nDirections\n1. ..." style="width:100%;height:310px;padding:12px;border:1.5px solid var(--line);border-radius:11px;background:var(--card);font:13px ui-monospace,monospace"></textarea><button class="btn" style="margin-top:12px" onclick="parseRecipeImport()">Convert &amp; review</button><p class="sub" style="margin-top:10px">WeekPlate can’t reliably fetch recipe URLs directly because many sites block browser access. Open the page, copy its recipe text, and paste it here.</p></div>`;
+  $('#sheet').innerHTML=`<div class="sheet-in"><div class="sheet-bar"><button onclick="closeSheet()">✕ Close</button></div><div class="day">Import recipe</div><h2 class="disp" style="font-size:22px">Paste a recipe</h2><p class="sub">Copy the recipe text from a website, note, email, or cookbook. Include the title, ingredients, and directions. Sous Chef Shuffle will match known ingredients, then let you review everything before saving.</p><textarea id="importText" placeholder="Recipe title\n\nIngredients\n1 lb chicken breast\n...\n\nDirections\n1. ..." style="width:100%;height:310px;padding:12px;border:1.5px solid var(--line);border-radius:11px;background:var(--card);font:13px ui-monospace,monospace"></textarea><button class="btn" style="margin-top:12px" onclick="parseRecipeImport()">Convert &amp; review</button><p class="sub" style="margin-top:10px">Sous Chef Shuffle can’t reliably fetch recipe URLs directly because many sites block browser access. Open the page, copy its recipe text, and paste it here.</p></div>`;
   $('#sheet').classList.add('show');$('#sheet').scrollTop=0;
 }
 function parseRecipeImport(){
@@ -3619,8 +3619,8 @@ function renderOnboarding(){
   if(onboardStep===0){
     body=`<img class="onboard-hero" src="icons/home-hero.jpg" alt="A colorful family-style meal on a table">
       <div class="onboard-kicker">A calmer dinner week</div>
-      <h1 class="onboard-title" id="onboardTitle">Let’s make WeekPlate yours.</h1>
-      <p class="onboard-copy">Answer a few quick questions and WeekPlate will build dinners around your household, schedule, budget, and preferred store.</p>
+      <h1 class="onboard-title" id="onboardTitle">Let’s make Sous Chef Shuffle yours.</h1>
+      <p class="onboard-copy">Answer a few quick questions and Sous Chef Shuffle will build dinners around your household, schedule, budget, and preferred store.</p>
       <div class="onboard-panel"><h3>What you’ll get</h3><p class="sub" style="margin:0">A ready-to-use meal plan, one priced shopping list, and less food left behind.</p></div>`;
   } else if(onboardStep===1){
     body=`<div class="onboard-kicker">Step 2 · Household</div>
@@ -3793,7 +3793,7 @@ function viewSetup(){
 
   <div class="card">
     <h2>Meal learning</h2>
-    <p class="sub">WeekPlate learns from your end-of-week check-ins: loved meals appear more often, “don’t repeat” meals stay out, and time, cost, portions, and leftover quality shape future plans.</p>
+    <p class="sub">Sous Chef Shuffle learns from your end-of-week check-ins: loved meals appear more often, “don’t repeat” meals stay out, and time, cost, portions, and leftover quality shape future plans.</p>
     <div class="row"><span class="sub" style="margin:0">${Object.keys(S.mealFeedback||{}).length} recipe${Object.keys(S.mealFeedback||{}).length===1?'':'s'} learned</span>${Object.keys(S.mealFeedback||{}).length?`<button class="chip" onclick="if(confirm('Clear all learned meal feedback? Favorites and blocked meals stay as they are.')){S.mealFeedback={};save();render();toast('Meal learning cleared')}" style="font-size:12px">Clear learning</button>`:''}</div>
   </div>
 
@@ -3817,9 +3817,9 @@ function viewSetup(){
     </div>
     <p class="sub" style="margin:0 0 10px">${
       storageBackend==='none'
-      ? 'This viewer blocks storage, so your data is lost when the app closes. Export a backup below, or run WeekPlate from Netlify in Safari where saving works normally.'
+      ? 'This viewer blocks storage, so your data is lost when the app closes. Export a backup below, or run Sous Chef Shuffle from its published site in Safari where saving works normally.'
       : (storageBackend==='local'
-        ? 'Saved in this browser. Stays put if you add WeekPlate to your Home Screen. Clearing Safari data would erase it — keep a backup.'
+        ? 'Saved in this browser. Stays put if you add Sous Chef Shuffle to your Home Screen. Clearing Safari data would erase it — keep a backup.'
         : 'Saved automatically to Claude\u2019s artifact storage.')}
       ${lastSaved? ' Last saved '+new Date(lastSaved).toLocaleTimeString()+'.' : ''}</p>
     <div class="row" style="gap:10px">
@@ -3836,7 +3836,7 @@ function viewSetup(){
     </details>
   </div>
 
-  <p class="sub" style="text-align:center;padding:6px 20px">💡 In Safari, tap Share → <b>Add to Home Screen</b> to use WeekPlate like a native app. ${S.weeksDone? `Weeks completed: ${S.weeksDone}.`:''}</p>`;
+  <p class="sub" style="text-align:center;padding:6px 20px">💡 In Safari, tap Share → <b>Add to Home Screen</b> to use Sous Chef Shuffle like a native app. ${S.weeksDone? `Weeks completed: ${S.weeksDone}.`:''}</p>`;
 }
 function nearAge(age,a){ const g=x=> x<=3?0:x<=8?1:x<=13?2:x<=18?3:4; if(g(age)!==g(a)) return false; if(g(a)<4) return true; return Math.abs(age-a)<=7; }
 function toggleDiet(pi,d){ const p=S.household[pi]; p.diet=p.diet||[]; const i=p.diet.indexOf(d); if(i>=0)p.diet.splice(i,1); else p.diet.push(d); save(); render(); }

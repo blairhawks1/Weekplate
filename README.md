@@ -1,10 +1,10 @@
-# WeekPlate
+# Sous Chef Shuffle
 
 Production: https://weekplate.blairhawks1.workers.dev/
 
 Latest deployment trigger: 2026-08-23 18:40 America/Chicago.
 
-WeekPlate is a private, device-local meal planner for families. It builds one- or two-week dinner plans, creates store-priced shopping lists, tracks pantry leftovers and use-by dates, and includes 150 recipes with nutrition estimates.
+Sous Chef Shuffle is a private, device-local meal planner for families. It builds one- or two-week dinner plans, creates store-priced shopping lists, tracks pantry leftovers and use-by dates, and includes 150 recipes with nutrition estimates.
 
 ## Run it
 
