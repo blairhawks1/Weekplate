@@ -2,7 +2,9 @@
 
 **What it is:** a single-file, offline-first meal-planning web app. One `index.html` containing all HTML, CSS, JS, a 150-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
 
-**Current version:** v47 (shown as a badge next to the logo, and in the Guide footer).
+**Current version:** v48 (shown as a badge next to the logo, and in the Guide footer).
+
+**v48:** expanded the built-in library from 150 to 200 complete recipes. The 50 additions intentionally lean meat-based—34 chicken, beef, pork, turkey, or seafood dinners and 16 plant-based dinners—while adding variety across sheet-pan meals, skillets, pasta, casseroles, bowls, tacos, and roasted dishes. Every addition includes directions and uses the existing validated price and nutrition catalog.
 
 **v47:** rebalanced the 150-recipe built-in library by replacing ten bean-heavy soups, chilis, curries, bowls, and pastas with varied meat and seafood dinners. New choices include steak bites, pork tenderloin, cod, turkey meatloaf, bacon-wrapped chicken, beef zucchini boats, sausage and gnocchi, salmon bowls, shrimp, and turkey sloppy joes, all with complete directions, pricing, and nutrition coverage.
 

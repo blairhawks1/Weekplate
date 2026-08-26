@@ -51,7 +51,7 @@ recipes = read_const("RECIPES")
 steps = read_const("STEPS")
 nutrition = read_const("NUT")
 
-assert len(recipes) == 150, "the built-in library must contain 150 recipes"
+assert len(recipes) == 200, "the built-in library must contain 200 recipes"
 assert len({recipe["t"] for recipe in recipes}) == len(recipes), "recipe titles must be unique"
 
 errors = []
@@ -74,7 +74,7 @@ for title in steps:
         errors.append(f"{title}: steps have no matching recipe")
 
 assert not errors, "\n".join(errors)
-assert "Sous Chef Shuffle v47" in HTML
+assert "Sous Chef Shuffle v48" in HTML
 assert "WeekPlate v" not in HTML
 assert 'class="onboard-brand">Week' not in HTML
 assert 'class="onboard-brand">Sous Chef <span>Shuffle</span>' in HTML

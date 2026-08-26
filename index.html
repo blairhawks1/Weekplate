@@ -411,7 +411,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Sous Chef <span>Shuffle</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v47</span></h1>
+    <h1>Sous Chef <span>Shuffle</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v48</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -1053,7 +1053,57 @@ const RECIPES = [
 {t:"Veggie Breakfast Tacos",m:20,p:"veg",tags:["vegetarian","gf","kid"],ing:[["eggs",6,"count"],["tortillas",8,"count"],["black beans",1,"can"],["bell pepper",1,"count"],["cheddar cheese",4,"oz"],["salsa",6,"oz"]]},
 {t:"Garlic Shrimp Rice Skillet",m:25,p:"fish",tags:["gf"],ing:[["shrimp",1.25,"lb"],["rice",1.5,"cup"],["butter",3,"tbsp"],["garlic",4,"clove"],["lemon",1,"count"],["spinach",5,"oz"]]},
 {t:"Smoky Turkey Sloppy Joes",m:25,p:"turkey",tags:["df","kid"],ing:[["ground turkey",1.25,"lb"],["burger buns",4,"count"],["tomato sauce",1,"can"],["ketchup",3,"tbsp"],["worcestershire sauce",1,"tbsp"],["onion",1,"count"]]},
-{t:"Mushroom Spinach Quesadillas",m:20,p:"veg",tags:["vegetarian","kid"],ing:[["mushrooms",8,"oz"],["spinach",5,"oz"],["tortillas",8,"count"],["cheddar cheese",8,"oz"],["onion",1,"count"],["sour cream",4,"oz"]]}
+{t:"Mushroom Spinach Quesadillas",m:20,p:"veg",tags:["vegetarian","kid"],ing:[["mushrooms",8,"oz"],["spinach",5,"oz"],["tortillas",8,"count"],["cheddar cheese",8,"oz"],["onion",1,"count"],["sour cream",4,"oz"]]},
+{t:"Bruschetta Chicken with Green Beans",m:30,p:"chicken",tags:["gf","lc"],ing:[["chicken breast",1.5,"lb"],["tomato",3,"count"],["basil",0.5,"bunch"],["garlic",3,"clove"],["green beans",1,"lb"],["olive oil",2,"tbsp"]]},
+{t:"Lemon Parmesan Chicken Cutlets",m:30,p:"chicken",tags:["kid"],ing:[["chicken breast",1.5,"lb"],["panko breadcrumbs",1,"cup"],["parmesan",3,"oz"],["eggs",2,"count"],["lemon",1,"count"],["broccoli",1,"head"]]},
+{t:"Greek Lemon Chicken and Potatoes",m:45,p:"chicken",tags:["gf","df"],ing:[["chicken thighs",2,"lb"],["potatoes",2,"lb"],["lemon",2,"count"],["garlic",4,"clove"],["dried oregano",1,"tbsp"],["olive oil",3,"tbsp"]]},
+{t:"Tomato Basil Chicken Caprese",m:30,p:"chicken",tags:["gf","lc"],ing:[["chicken breast",1.5,"lb"],["mozzarella",6,"oz"],["tomato",3,"count"],["basil",0.5,"bunch"],["balsamic vinegar",2,"tbsp"]]},
+{t:"Cajun Chicken Rice Skillet",m:30,p:"chicken",tags:["gf","df"],ing:[["chicken breast",1.25,"lb"],["rice",1.5,"cup"],["bell pepper",2,"count"],["onion",1,"count"],["cajun seasoning",2,"tbsp"]]},
+{t:"Honey Lime Chicken Bowls",m:30,p:"chicken",tags:["gf","df"],ing:[["chicken thighs",1.5,"lb"],["rice",1.5,"cup"],["honey",2,"tbsp"],["lime",2,"count"],["canned corn",1,"can"],["avocado",1,"count"]]},
+{t:"Chicken Broccoli Cheddar Bake",m:40,p:"chicken",tags:["gf","kid"],ing:[["chicken breast",1.25,"lb"],["broccoli",2,"head"],["rice",1.5,"cup"],["cheddar cheese",6,"oz"],["milk",1,"cup"]]},
+{t:"Pesto Mozzarella Chicken",m:30,p:"chicken",tags:["gf","lc"],ing:[["chicken breast",1.5,"lb"],["pesto",6,"oz"],["mozzarella",6,"oz"],["cherry tomatoes",1,"pint"],["zucchini",2,"count"]]},
+{t:"Korean-Style Beef Rice Bowls",m:25,p:"beef",tags:["df"],ing:[["ground beef",1.25,"lb"],["rice",1.5,"cup"],["soy sauce",3,"tbsp"],["brown sugar",2,"tbsp"],["garlic",3,"clove"],["green onions",1,"bunch"]]},
+{t:"Steak Fajita Rice Bowls",m:30,p:"beef",tags:["gf","df"],ing:[["beef sirloin",1.25,"lb"],["rice",1.5,"cup"],["bell pepper",3,"count"],["onion",1,"count"],["taco seasoning",2,"tbsp"],["lime",1,"count"]]},
+{t:"Weeknight Cottage Pie",m:45,p:"beef",tags:["gf","kid"],ing:[["ground beef",1.25,"lb"],["potatoes",2,"lb"],["peas and carrots",16,"oz"],["onion",1,"count"],["beef broth",2,"cup"]]},
+{t:"Ginger Beef and Green Beans",m:25,p:"beef",tags:["df"],ing:[["beef sirloin",1.25,"lb"],["green beans",1,"lb"],["soy sauce",4,"tbsp"],["ginger",1,"tbsp"],["garlic",3,"clove"],["rice",1.5,"cup"]]},
+{t:"Beef Pepper Kebabs with Rice",m:35,p:"beef",tags:["gf","df"],ing:[["beef sirloin",1.5,"lb"],["bell pepper",3,"count"],["onion",1,"count"],["rice",1.5,"cup"],["olive oil",2,"tbsp"]]},
+{t:"Cheesy Beef and Potato Skillet",m:35,p:"beef",tags:["gf","kid"],ing:[["ground beef",1.25,"lb"],["potatoes",1.5,"lb"],["cheddar cheese",6,"oz"],["onion",1,"count"],["green beans",1,"lb"]]},
+{t:"Balsamic Pork Tenderloin",m:40,p:"pork",tags:["gf","df","lc"],ing:[["pork tenderloin",1.5,"lb"],["balsamic vinegar",3,"tbsp"],["garlic",3,"clove"],["green beans",1,"lb"],["potatoes",1.5,"lb"]]},
+{t:"Garlic Herb Pork Chops",m:35,p:"pork",tags:["gf","df","lc"],ing:[["pork chops",1.5,"lb"],["garlic",4,"clove"],["italian seasoning",1,"tbsp"],["zucchini",2,"count"],["olive oil",2,"tbsp"]]},
+{t:"Pork Fried Rice with Eggs",m:25,p:"pork",tags:["df"],ing:[["ground pork",1,"lb"],["rice",2,"cup"],["eggs",3,"count"],["peas and carrots",16,"oz"],["soy sauce",4,"tbsp"],["green onions",1,"bunch"]]},
+{t:"Sausage Potato Breakfast Skillet",m:30,p:"pork",tags:["gf","kid"],ing:[["italian sausage",1,"lb"],["potatoes",1.5,"lb"],["eggs",4,"count"],["bell pepper",1,"count"],["onion",1,"count"]]},
+{t:"Pork Lettuce Cups",m:25,p:"pork",tags:["df","lc"],ing:[["ground pork",1.25,"lb"],["lettuce",1,"head"],["soy sauce",3,"tbsp"],["ginger",1,"tbsp"],["garlic",3,"clove"],["carrots",2,"count"]]},
+{t:"Sausage Stuffed Zucchini",m:40,p:"pork",tags:["gf","lc"],ing:[["italian sausage",1,"lb"],["zucchini",4,"count"],["marinara sauce",12,"oz"],["mozzarella",6,"oz"],["onion",1,"count"]]},
+{t:"Turkey Parmesan Meatballs",m:35,p:"turkey",tags:["kid"],ing:[["ground turkey",1.25,"lb"],["panko breadcrumbs",0.75,"cup"],["eggs",1,"count"],["parmesan",3,"oz"],["marinara sauce",24,"oz"],["spaghetti",12,"oz"]]},
+{t:"Turkey Zucchini Rice Skillet",m:30,p:"turkey",tags:["gf","df"],ing:[["ground turkey",1.25,"lb"],["zucchini",2,"count"],["rice",1.5,"cup"],["diced tomatoes",1,"can"],["onion",1,"count"]]},
+{t:"Turkey Taco Salad Bowls",m:25,p:"turkey",tags:["gf"],ing:[["ground turkey",1.25,"lb"],["lettuce",1,"head"],["tomato",2,"count"],["canned corn",1,"can"],["cheddar cheese",4,"oz"],["salsa",8,"oz"]]},
+{t:"Creamy Turkey Mushroom Pasta",m:30,p:"turkey",tags:[],ing:[["ground turkey",1,"lb"],["penne",12,"oz"],["mushrooms",8,"oz"],["heavy cream",1,"cup"],["parmesan",2,"oz"],["spinach",5,"oz"]]},
+{t:"Mediterranean Turkey Patties",m:30,p:"turkey",tags:["gf"],ing:[["ground turkey",1.25,"lb"],["feta",4,"oz"],["cucumber",1,"count"],["tomato",2,"count"],["greek yogurt",8,"oz"],["lemon",1,"count"]]},
+{t:"Parmesan Crusted Cod",m:30,p:"fish",tags:["kid"],ing:[["cod",1.5,"lb"],["panko breadcrumbs",1,"cup"],["parmesan",3,"oz"],["lemon",1,"count"],["green beans",1,"lb"]]},
+{t:"Blackened Salmon and Corn",m:25,p:"fish",tags:["gf","df","lc"],ing:[["salmon",1.5,"lb"],["cajun seasoning",2,"tbsp"],["corn on the cob",4,"count"],["lime",1,"count"],["coleslaw mix",14,"oz"]]},
+{t:"Cilantro Lime Shrimp Tacos",m:20,p:"fish",tags:["gf","df"],ing:[["shrimp",1.25,"lb"],["tortillas",8,"count"],["cabbage",0.5,"head"],["lime",2,"count"],["cilantro",0.5,"bunch"],["avocado",1,"count"]]},
+{t:"Shrimp Fried Rice with Broccoli",m:25,p:"fish",tags:["df"],ing:[["shrimp",1,"lb"],["rice",2,"cup"],["eggs",3,"count"],["broccoli",1,"head"],["soy sauce",4,"tbsp"],["green onions",1,"bunch"]]},
+{t:"Lemon Butter Tilapia Piccata",m:25,p:"fish",tags:["gf","lc"],ing:[["tilapia",1.5,"lb"],["butter",3,"tbsp"],["lemon",2,"count"],["garlic",3,"clove"],["asparagus",1,"lb"]]},
+{t:"Garlic Butter Shrimp Spaghetti",m:25,p:"fish",tags:[],ing:[["shrimp",1.25,"lb"],["spaghetti",12,"oz"],["butter",3,"tbsp"],["garlic",4,"clove"],["lemon",1,"count"],["parsley",0.5,"bunch"]]},
+{t:"Salmon Pesto Sheet Pan",m:30,p:"fish",tags:["gf","lc"],ing:[["salmon",1.5,"lb"],["pesto",4,"oz"],["cherry tomatoes",1,"pint"],["zucchini",2,"count"],["olive oil",2,"tbsp"]]},
+{t:"Cajun Shrimp and Sausage Rice",m:35,p:"pork",tags:["gf","df"],ing:[["shrimp",0.75,"lb"],["italian sausage",0.75,"lb"],["rice",1.5,"cup"],["bell pepper",2,"count"],["cajun seasoning",2,"tbsp"]]},
+{t:"Italian Sausage Pepper Bake",m:35,p:"pork",tags:["gf","df"],ing:[["italian sausage",1.25,"lb"],["bell pepper",3,"count"],["onion",1,"count"],["potatoes",1.5,"lb"],["olive oil",2,"tbsp"]]},
+{t:"Mushroom Spinach Stroganoff",m:30,p:"veg",tags:["vegetarian"],ing:[["egg noodles",12,"oz"],["mushrooms",16,"oz"],["spinach",5,"oz"],["sour cream",8,"oz"],["onion",1,"count"],["vegetable broth",2,"cup"]]},
+{t:"Roasted Vegetable Lasagna",m:50,p:"veg",tags:["vegetarian"],ing:[["lasagna noodles",12,"oz"],["zucchini",2,"count"],["bell pepper",2,"count"],["marinara sauce",24,"oz"],["ricotta",15,"oz"],["mozzarella",8,"oz"]]},
+{t:"Spinach Ricotta Lasagna Bake",m:45,p:"veg",tags:["vegetarian","kid"],ing:[["lasagna noodles",12,"oz"],["ricotta",15,"oz"],["spinach",5,"oz"],["marinara sauce",24,"oz"],["mozzarella",6,"oz"]]},
+{t:"Teriyaki Tofu Rice Bowls",m:25,p:"veg",tags:["vegetarian","vegan","df"],ing:[["tofu",14,"oz"],["rice",1.5,"cup"],["soy sauce",3,"tbsp"],["brown sugar",2,"tbsp"],["broccoli",1,"head"],["carrots",2,"count"]]},
+{t:"Sesame Tofu and Green Beans",m:25,p:"veg",tags:["vegetarian","vegan","df"],ing:[["tofu",14,"oz"],["green beans",1,"lb"],["soy sauce",3,"tbsp"],["sesame oil",1,"tbsp"],["garlic",3,"clove"],["rice",1.5,"cup"]]},
+{t:"Vegetable Paella Skillet",m:35,p:"veg",tags:["vegetarian","vegan","gf","df"],ing:[["rice",1.5,"cup"],["bell pepper",2,"count"],["frozen peas",8,"oz"],["diced tomatoes",1,"can"],["vegetable broth",3,"cup"],["smoked paprika",1,"tbsp"]]},
+{t:"Pesto Vegetable Penne",m:25,p:"veg",tags:["vegetarian"],ing:[["penne",12,"oz"],["pesto",6,"oz"],["zucchini",2,"count"],["cherry tomatoes",1,"pint"],["parmesan",2,"oz"]]},
+{t:"Crispy Eggplant Parmesan",m:45,p:"veg",tags:["vegetarian"],ing:[["eggplant",2,"count"],["panko breadcrumbs",1,"cup"],["eggs",2,"count"],["marinara sauce",24,"oz"],["mozzarella",6,"oz"],["parmesan",2,"oz"]]},
+{t:"Creamy Tomato Gnocchi",m:25,p:"veg",tags:["vegetarian","kid"],ing:[["gnocchi",16,"oz"],["crushed tomatoes",1,"can"],["heavy cream",1,"cup"],["spinach",5,"oz"],["parmesan",2,"oz"]]},
+{t:"Roasted Cauliflower Coconut Curry",m:35,p:"veg",tags:["vegetarian","vegan","gf","df"],ing:[["cauliflower",1,"head"],["coconut milk",1,"can"],["diced tomatoes",1,"can"],["curry powder",2,"tbsp"],["rice",1.5,"cup"]]},
+{t:"Vegetable Pot Pie Skillet",m:40,p:"veg",tags:["vegetarian"],ing:[["peas and carrots",16,"oz"],["potatoes",1,"lb"],["mushrooms",8,"oz"],["milk",1,"cup"],["vegetable broth",2,"cup"],["pizza dough",1,"count"]]},
+{t:"Greek Chickpea Cucumber Plates",m:20,p:"veg",tags:["vegetarian","gf"],ing:[["chickpeas",1,"can"],["cucumber",2,"count"],["tomato",3,"count"],["feta",4,"oz"],["kalamata olives",4,"oz"],["lemon",1,"count"]]},
+{t:"Lentil Sweet Potato Shepherd Pie",m:50,p:"veg",tags:["vegetarian","vegan","gf","df"],ing:[["lentils",1.5,"cup"],["sweet potatoes",2,"lb"],["peas and carrots",16,"oz"],["onion",1,"count"],["vegetable broth",2,"cup"]]},
+{t:"Broccoli Cheddar Baked Potatoes",m:45,p:"veg",tags:["vegetarian","gf","kid"],ing:[["potatoes",2,"lb"],["broccoli",2,"head"],["cheddar cheese",6,"oz"],["greek yogurt",8,"oz"],["green onions",1,"bunch"]]},
+{t:"Black Bean Corn Enchilada Skillet",m:30,p:"veg",tags:["vegetarian","gf"],ing:[["black beans",1,"can"],["canned corn",1,"can"],["tortillas",6,"count"],["enchilada sauce",1,"can"],["cheddar cheese",6,"oz"],["bell pepper",1,"count"]]},
+{t:"Mediterranean Quinoa Stuffed Tomatoes",m:35,p:"veg",tags:["vegetarian","gf"],ing:[["tomato",6,"count"],["quinoa",1.5,"cup"],["feta",4,"oz"],["spinach",5,"oz"],["kalamata olives",3,"oz"]]}
 ];
 
 const STEPS = {
@@ -1206,7 +1256,57 @@ const STEPS = {
 "Veggie Breakfast Tacos":["Sauté diced pepper and warm beans.","Scramble eggs.","Warm tortillas.","Fill with eggs, beans, pepper, cheese, and salsa."],
 "Garlic Shrimp Rice Skillet":["Cook rice and keep warm.","Melt butter in a large skillet; cook garlic for 30 seconds.","Add shrimp and cook 2–3 minutes per side until opaque.","Wilt in spinach and finish with lemon juice.","Serve the shrimp mixture over rice."],
 "Smoky Turkey Sloppy Joes":["Sauté diced onion until softened.","Add turkey and cook until browned and it reaches 165°F.","Stir in tomato sauce, ketchup, and Worcestershire.","Simmer 8–10 minutes until thick.","Spoon onto toasted buns."],
-"Mushroom Spinach Quesadillas":["Sauté mushrooms and onion until browned; wilt in spinach.","Spread filling and cheese over tortillas; fold.","Toast in a dry skillet until crisp and melted.","Serve with sour cream."]
+"Mushroom Spinach Quesadillas":["Sauté mushrooms and onion until browned; wilt in spinach.","Spread filling and cheese over tortillas; fold.","Toast in a dry skillet until crisp and melted.","Serve with sour cream."],
+"Bruschetta Chicken with Green Beans":["Chop tomatoes and basil; mix with garlic and oil.","Cook green beans until crisp-tender.","Sear seasoned chicken until it reaches 165°F.","Spoon tomato mixture over chicken and serve."],
+"Lemon Parmesan Chicken Cutlets":["Pound chicken thin.","Coat in egg, panko, and parmesan.","Pan-cook until crisp and 165°F; steam broccoli.","Finish with lemon."],
+"Greek Lemon Chicken and Potatoes":["Heat oven to 425°F.","Toss chicken and potatoes with lemon, garlic, oregano, and oil.","Roast until potatoes brown and chicken reaches 165°F.","Rest briefly and serve."],
+"Tomato Basil Chicken Caprese":["Season and sear chicken.","Top with tomato and mozzarella.","Cover until chicken reaches 165°F and cheese melts.","Finish with basil and balsamic."],
+"Cajun Chicken Rice Skillet":["Brown seasoned chicken pieces.","Sauté pepper and onion.","Add rice and water; cover and simmer until tender.","Return chicken and cook to 165°F."],
+"Honey Lime Chicken Bowls":["Cook rice.","Sear chicken to 165°F with honey and lime.","Warm corn and slice avocado.","Build bowls and spoon over pan juices."],
+"Chicken Broccoli Cheddar Bake":["Cook rice and steam broccoli.","Brown chicken pieces to 165°F.","Combine with milk and cheddar in a baking dish.","Bake at 400°F until bubbling."],
+"Pesto Mozzarella Chicken":["Sear seasoned chicken.","Add zucchini and tomatoes.","Top chicken with pesto and mozzarella.","Cover until chicken reaches 165°F and cheese melts."],
+"Korean-Style Beef Rice Bowls":["Cook rice.","Brown beef with garlic.","Stir in soy sauce and brown sugar; simmer briefly.","Serve over rice with green onions."],
+"Steak Fajita Rice Bowls":["Cook rice.","Sear seasoned steak strips.","Cook peppers and onion until charred.","Build bowls and finish with lime."],
+"Weeknight Cottage Pie":["Boil and mash potatoes.","Brown beef and onion.","Add vegetables and broth; simmer until thick.","Top with potatoes and bake at 425°F until golden."],
+"Ginger Beef and Green Beans":["Cook rice.","Sear beef strips and set aside.","Stir-fry green beans with garlic and ginger.","Return beef, add soy sauce, and serve over rice."],
+"Beef Pepper Kebabs with Rice":["Cook rice.","Thread beef, peppers, and onion onto skewers.","Brush with oil and season.","Grill or broil to preferred doneness and serve."],
+"Cheesy Beef and Potato Skillet":["Brown beef and onion.","Add diced potatoes and cover until tender.","Stir in green beans.","Top with cheddar and cover until melted."],
+"Balsamic Pork Tenderloin":["Heat oven to 425°F.","Sear seasoned pork and brush with balsamic and garlic.","Roast potatoes and green beans alongside.","Cook pork to 145°F, rest, and slice."],
+"Garlic Herb Pork Chops":["Season chops with garlic and herbs.","Sear until browned.","Sauté zucchini in the same pan.","Cook pork to 145°F, rest, and serve."],
+"Pork Fried Rice with Eggs":["Scramble eggs and set aside.","Brown pork to 160°F.","Stir-fry vegetables and rice with soy sauce.","Fold eggs back in and top with green onions."],
+"Sausage Potato Breakfast Skillet":["Brown sausage and remove.","Cook diced potatoes, pepper, and onion until tender.","Return sausage and make wells for eggs.","Cover until eggs set and sausage is cooked through."],
+"Pork Lettuce Cups":["Brown pork to 160°F.","Add garlic, ginger, carrots, and soy sauce.","Cook until carrots soften.","Spoon into crisp lettuce leaves."],
+"Sausage Stuffed Zucchini":["Halve and hollow zucchini.","Brown sausage and onion.","Mix with marinara and fill zucchini.","Top with mozzarella and bake at 400°F until tender."],
+"Turkey Parmesan Meatballs":["Mix turkey, breadcrumbs, egg, and parmesan.","Shape meatballs and bake at 425°F to 165°F.","Warm in marinara.","Serve over cooked spaghetti."],
+"Turkey Zucchini Rice Skillet":["Brown turkey and onion to 165°F.","Add zucchini and tomatoes.","Stir in rice and water.","Cover and simmer until rice is tender."],
+"Turkey Taco Salad Bowls":["Brown turkey with taco seasoning to 165°F.","Chop lettuce and tomato.","Warm corn.","Build bowls with cheese and salsa."],
+"Creamy Turkey Mushroom Pasta":["Cook penne.","Brown turkey to 165°F and sauté mushrooms.","Add cream and wilt spinach.","Toss with pasta and parmesan."],
+"Mediterranean Turkey Patties":["Mix turkey with crumbled feta and shape patties.","Cook to 165°F.","Chop cucumber and tomato.","Serve patties with lemon yogurt and vegetables."],
+"Parmesan Crusted Cod":["Heat oven to 425°F.","Top cod with panko and parmesan.","Bake with green beans until cod reaches 145°F.","Finish with lemon."],
+"Blackened Salmon and Corn":["Season salmon with Cajun seasoning.","Cook corn and warm slaw.","Sear or roast salmon to 145°F.","Finish with lime and serve."],
+"Cilantro Lime Shrimp Tacos":["Toss cabbage with lime.","Cook shrimp until opaque.","Warm tortillas.","Fill with shrimp, slaw, avocado, and cilantro."],
+"Shrimp Fried Rice with Broccoli":["Scramble eggs and set aside.","Cook shrimp until opaque; remove.","Stir-fry broccoli and rice with soy sauce.","Fold shrimp and eggs back in."],
+"Lemon Butter Tilapia Piccata":["Season tilapia.","Sear until it reaches 145°F; remove.","Cook asparagus in the same pan.","Add butter, lemon, and garlic; spoon over fish."],
+"Garlic Butter Shrimp Spaghetti":["Cook spaghetti.","Sauté garlic in butter.","Cook shrimp until opaque.","Toss with pasta, lemon, and parsley."],
+"Salmon Pesto Sheet Pan":["Heat oven to 425°F.","Arrange salmon, tomatoes, and zucchini on a pan.","Top salmon with pesto and drizzle vegetables with oil.","Roast until salmon reaches 145°F."],
+"Cajun Shrimp and Sausage Rice":["Brown sliced sausage until cooked through.","Sauté peppers and Cajun seasoning.","Add rice and water; simmer until tender.","Add shrimp and cook until opaque."],
+"Italian Sausage Pepper Bake":["Heat oven to 425°F.","Slice sausage, peppers, onion, and potatoes.","Toss with oil on a sheet pan.","Roast until potatoes are tender and sausage is cooked through."],
+"Mushroom Spinach Stroganoff":["Cook egg noodles.","Brown mushrooms and onion.","Add broth and simmer; wilt in spinach.","Remove from heat, stir in sour cream, and toss with noodles."],
+"Roasted Vegetable Lasagna":["Roast chopped zucchini and peppers.","Layer noodles, marinara, ricotta, vegetables, and mozzarella.","Cover and bake at 375°F for 30 minutes.","Uncover, brown, and rest before slicing."],
+"Spinach Ricotta Lasagna Bake":["Boil noodles until flexible.","Layer noodles with ricotta, spinach, and marinara.","Top with mozzarella.","Bake at 375°F until bubbling."],
+"Teriyaki Tofu Rice Bowls":["Cook rice.","Brown tofu cubes.","Stir-fry broccoli and carrots.","Add soy sauce and brown sugar; serve over rice."],
+"Sesame Tofu and Green Beans":["Cook rice.","Brown tofu until crisp.","Stir-fry green beans and garlic.","Add soy and sesame oil; serve over rice."],
+"Vegetable Paella Skillet":["Sauté pepper with paprika.","Add rice, tomatoes, vegetables, and broth.","Cover and simmer without stirring until rice is tender.","Rest 5 minutes before serving."],
+"Pesto Vegetable Penne":["Cook penne.","Sauté zucchini and tomatoes.","Toss pasta and vegetables with pesto.","Finish with parmesan."],
+"Crispy Eggplant Parmesan":["Slice eggplant and coat with egg and panko.","Bake at 425°F until crisp.","Top with marinara and cheeses.","Bake until bubbling."],
+"Creamy Tomato Gnocchi":["Cook gnocchi.","Simmer tomatoes and cream.","Wilt in spinach.","Toss with gnocchi and parmesan."],
+"Roasted Cauliflower Coconut Curry":["Roast cauliflower at 425°F until browned.","Simmer tomatoes, coconut milk, and curry powder.","Stir in cauliflower.","Serve over cooked rice."],
+"Vegetable Pot Pie Skillet":["Cook potatoes, mushrooms, and vegetables until tender.","Add broth and milk; simmer until thick.","Top with puff pastry.","Bake at 400°F until puffed and golden."],
+"Greek Chickpea Cucumber Plates":["Drain and rinse chickpeas.","Chop cucumber and tomatoes.","Arrange with feta and olives.","Dress with lemon and serve."],
+"Lentil Sweet Potato Shepherd Pie":["Cook lentils and boil sweet potatoes.","Simmer lentils, vegetables, onion, and broth.","Mash sweet potatoes and spread over filling.","Bake at 400°F until browned."],
+"Broccoli Cheddar Baked Potatoes":["Bake potatoes at 425°F until tender.","Steam broccoli.","Split potatoes and fill with broccoli and cheddar.","Return to oven until melted; top with yogurt and onions."],
+"Black Bean Corn Enchilada Skillet":["Sauté pepper and warm beans and corn.","Stir in torn tortillas and enchilada sauce.","Top with cheddar.","Cover until hot and melted."],
+"Mediterranean Quinoa Stuffed Tomatoes":["Cook quinoa.","Hollow tomatoes.","Mix quinoa with spinach, feta, and olives.","Fill tomatoes and bake at 400°F until tender."]
 };
 
 /* ===== offline planner ===== */
@@ -3099,7 +3199,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">Sous Chef Shuffle v47 · ${RECIPES.length} recipes built in · optional shared household accounts</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">Sous Chef Shuffle v48 · ${RECIPES.length} recipes built in · optional shared household accounts</p>`;
 }
 
 /* ----- plan ----- */
