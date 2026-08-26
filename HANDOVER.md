@@ -2,7 +2,9 @@
 
 **What it is:** a single-file, offline-first meal-planning web app. One `index.html` containing all HTML, CSS, JS, a 150-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
 
-**Current version:** v46 (shown as a badge next to the logo, and in the Guide footer).
+**Current version:** v47 (shown as a badge next to the logo, and in the Guide footer).
+
+**v47:** rebalanced the 150-recipe built-in library by replacing ten bean-heavy soups, chilis, curries, bowls, and pastas with varied meat and seafood dinners. New choices include steak bites, pork tenderloin, cod, turkey meatloaf, bacon-wrapped chicken, beef zucchini boats, sausage and gnocchi, salmon bowls, shrimp, and turkey sloppy joes, all with complete directions, pricing, and nutrition coverage.
 
 **v46:** added recipe-type organization and planning preferences. The Recipes tab groups and filters dinners by useful overlapping types such as Soup & Chili, Casserole, Chicken, Fish & Seafood, Pasta, and Vegetarian. Custom and imported recipes can be assigned one or more types. Setup can require selected types to appear at least once per planned week, while each scheduled dinner has its own Type control that immediately finds a matching eligible replacement. Category choices participate in full household-account sync.
 
