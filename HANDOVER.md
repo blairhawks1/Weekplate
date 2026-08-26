@@ -2,7 +2,9 @@
 
 **What it is:** a single-file, offline-first meal-planning web app. One `index.html` containing all HTML, CSS, JS, a 150-recipe library, a price book, a nutrition table, and a self-written PDF engine. No build step, no backend, no dependencies. Runs by opening the file in a browser or dropping it on static hosting (Netlify Drop).
 
-**Current version:** v45 (shown as a badge next to the logo, and in the Guide footer).
+**Current version:** v46 (shown as a badge next to the logo, and in the Guide footer).
+
+**v46:** added recipe-type organization and planning preferences. The Recipes tab groups and filters dinners by useful overlapping types such as Soup & Chili, Casserole, Chicken, Fish & Seafood, Pasta, and Vegetarian. Custom and imported recipes can be assigned one or more types. Setup can require selected types to appear at least once per planned week, while each scheduled dinner has its own Type control that immediately finds a matching eligible replacement. Category choices participate in full household-account sync.
 
 **v45:** expanded Household Sync into a complete shared household account. Connected phones now share household members, individual and household allergens, preferences, plans, pantry, prices, recipes, saved templates, history, photos, Sunday Prep progress, and grocery lists. Only the device label and private invite credential stay local. Server state is stored in transactional SQLite chunks so photo-backed accounts do not exceed Cloudflare's per-row size limit; existing v44 rooms migrate automatically from their original single-row storage.
 

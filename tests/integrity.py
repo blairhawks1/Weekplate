@@ -74,7 +74,7 @@ for title in steps:
         errors.append(f"{title}: steps have no matching recipe")
 
 assert not errors, "\n".join(errors)
-assert "Sous Chef Shuffle v45" in HTML
+assert "Sous Chef Shuffle v46" in HTML
 assert "WeekPlate v" not in HTML
 assert 'class="onboard-brand">Week' not in HTML
 assert 'class="onboard-brand">Sous Chef <span>Shuffle</span>' in HTML
@@ -93,6 +93,8 @@ assert "sundayPrepTasks" in HTML and "openSundayPrep" in HTML and "togglePrepTas
 assert "SUNDAY PREP MODE" in HTML and "Food-safety note" in HTML and "prepDone" in HTML
 assert "createHouseholdSync" in HTML and "joinHouseholdSync" in HTML and "pullHouseholdSync" in HTML
 assert "Household account" in HTML and "schema:2,account" in HTML and "syncBanner" in HTML
+assert "RECIPE_CATEGORIES" in HTML and "recipeCategories" in HTML and "Group by type" in HTML
+assert "weeklyCategories" in HTML and "nightCategories" in HTML and "setNightCategory" in HTML
 assert "buildPantryFirst" in HTML and "parseRecipeImport" in HTML and "priorityPantry" in HTML
 assert "user-scalable=no" not in HTML
 root = pathlib.Path(__file__).parent.parent

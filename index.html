@@ -411,7 +411,7 @@ nav button{font-size:10px;min-height:48px}
 <body>
 <div id="app">
   <header>
-    <h1>Sous Chef <span>Shuffle</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v45</span></h1>
+    <h1>Sous Chef <span>Shuffle</span> <span style="font-size:10px;font-weight:600;color:var(--muted);vertical-align:super">v46</span></h1>
     <div id="weekLabel"></div>
   </header>
   <main id="main" tabindex="-1"></main>
@@ -456,6 +456,8 @@ const DEFAULTS = {
   horizon:1,                  // 1 = one week, 2 = two-week plan (one shop, bulk shared)
   photos:{},                  // recipe title -> {src (compressed dataURL), ts}
   nightLimits:{},             // "week-day" -> max minutes for that calendar night
+  weeklyCategories:[],        // recipe types to include at least once in each generated week
+  nightCategories:{},         // "week-day" -> requested recipe type
   sync:{code:'',deviceId:'',deviceName:'',revision:0,cookNames:[]}, // local credentials for optional household room
   onboardingDone:false        // first-run guide completion
 };
@@ -510,6 +512,8 @@ function migrate(){
   S.macro = Object.assign({mode:'off',cal:0,protein:0,carbs:0,fat:0}, S.macro||{});
   S.priceBook = S.priceBook||{}; S.customRecipes=S.customRecipes||[]; S.photos=S.photos||{};
   S.nightLimits=S.nightLimits||{};
+  S.weeklyCategories=Array.isArray(S.weeklyCategories)?S.weeklyCategories:[];
+  S.nightCategories=S.nightCategories||{};
   S.allergens=typeof S.allergens==='string'?S.allergens:'';
   S.favorites=S.favorites||[]; S.blocked=S.blocked||[]; S.history=S.history||[];
   S.mealFeedback=S.mealFeedback||{};
@@ -1231,6 +1235,21 @@ function avoidList(){
 function violatesPerson(src, p){
   return (p.diet||[]).some(d=> !src.tags.includes(DIET_TAG[d]));
 }
+const RECIPE_CATEGORIES=['Soup & Chili','Casserole','Chicken','Beef','Pork','Turkey','Fish & Seafood','Pasta','Tacos & Mexican','Bowls','Vegetarian'];
+function recipeCategories(r){
+  if(Array.isArray(r.categories)&&r.categories.length)return r.categories;
+  const t=String(r.t||'').toLowerCase(),out=[];
+  if(/soup|stew|chili|chowder/.test(t))out.push('Soup & Chili');
+  if(/casserole|bake\b|baked ziti|enchilada|lasagna|stuffed/.test(t))out.push('Casserole');
+  if(/pasta|spaghetti|ziti|linguine|fettuccine|noodle|gnocchi|tortellini|mac and cheese|alfredo/.test(t))out.push('Pasta');
+  if(/taco|fajita|burrito|quesadilla|enchilada|nacho/.test(t))out.push('Tacos & Mexican');
+  if(/bowl/.test(t))out.push('Bowls');
+  const protein={chicken:'Chicken',beef:'Beef',pork:'Pork',turkey:'Turkey',fish:'Fish & Seafood',veg:'Vegetarian'}[r.p];
+  if(protein)out.push(protein);
+  if((r.tags||[]).includes('vegetarian')&&!out.includes('Vegetarian'))out.push('Vegetarian');
+  return [...new Set(out.length?out:['Other'])];
+}
+function hasRecipeCategory(r,category){return !category||recipeCategories(r).includes(category);}
 function libPool(){  // time + dislikes only; diets handled per person
   const avoid = avoidList();
   let pool = [];
@@ -1385,8 +1404,23 @@ function libBuild(fixed, keepWeekOf, avoidTitles){
     if(wantDouble) kLeft--;
   }
   assignDays(out, n);
+  applyCategoryRequests(out);
   finalizeWeek(out, keepWeekOf, !!fixed);
   if(S.week) S.week.macroRelaxed = macroRelaxed;
+}
+function applyCategoryRequests(recipes){
+  const used=new Set(recipes.map(r=>r.title)),safe=src=>S.household.every(p=>!violatesPerson(src,p));
+  function replaceAt(i,category){
+    const old=recipes[i],limit=+(S.nightLimits||{})[nightKey(old)]||S.maxMinutes+30;
+    const pool=libPool().filter(src=>hasRecipeCategory(src,category)&&safe(src)&&effectiveMinutes(src)<=limit&&!used.has(src.t));
+    if(!pool.length)return false;const src=pool[Math.floor(Math.random()*pool.length)],rec=libRecipeObj(src,old.day,(old.servings||targetServings())/4);
+    ['week','cook','locked','double','leftoverDay','leftoverWeek'].forEach(k=>{if(old[k]!=null)rec[k]=old[k];});used.delete(old.title);used.add(src.t);recipes[i]=rec;return true;
+  }
+  recipes.forEach((r,i)=>{const wanted=(S.nightCategories||{})[nightKey(r)];if(wanted&&!r.locked&&!hasRecipeCategory(RECIPES.find(x=>x.t===r.title)||{},wanted))replaceAt(i,wanted);});
+  for(let wk=1;wk<=Math.max(1,Math.min(2,S.horizon||1));wk++)(S.weeklyCategories||[]).forEach(category=>{
+    if(recipes.some(r=>(r.week||1)===wk&&hasRecipeCategory(RECIPES.find(x=>x.t===r.title)||{},category)))return;
+    const i=recipes.findIndex(r=>(r.week||1)===wk&&!r.locked&&!r.double&&!(S.nightCategories||{})[nightKey(r)]);if(i>=0)replaceAt(i,category);
+  });
 }
 /* lay recipes onto the horizon: doubles take their day + the next as leftovers */
 function assignDays(recipes, n){
@@ -1488,7 +1522,7 @@ function libPrice(items){
     it.leftover=round2(it.packs*it.pkgQty-it.need);
   });
 }
-function libSwap(i, maxOverride){
+function libSwap(i, maxOverride, categoryOverride){
   const w=S.week, tgt=w.servings;
   const oldRec = w.recipes[i];
   const span = oldRec.double?2:1;
@@ -1503,6 +1537,7 @@ function libSwap(i, maxOverride){
   });
   const allow = new Map(); restricted.forEach(p=> allow.set(p, altPoolFor(p).length ? (S.altNights??2) : 0));
   let pool = libPool().filter(r=> (!maxOverride || effectiveMinutes(r)<=maxOverride) && !used.includes(r.t)
+    && hasRecipeCategory(r,categoryOverride||(S.nightCategories||{})[nightKey(oldRec)])
     && restricted.every(p=> !violatesPerson(r,p) || off.get(p)+span <= allow.get(p)));
   if(oldRec.double){
     const dpool = pool.filter(r=> reheatsWell(r.t) && restricted.every(p=>!violatesPerson(r,p)));
@@ -1513,7 +1548,7 @@ function libSwap(i, maxOverride){
     const mp2 = pool.filter(r=>macroOK(r,1)); if(mp2.length) pool = mp2;
     else { const mp3=pool.filter(r=>macroOK(r,1.35)); if(mp3.length) pool=mp3; }
   }
-  if(!pool.length){ toast(maxOverride?`No eligible dinner fits ${maxOverride} minutes`:'No other eligible recipes in the library'); return false; }
+  if(!pool.length){ toast(categoryOverride?`No eligible ${categoryOverride.toLowerCase()} recipe fits this night`:maxOverride?`No eligible dinner fits ${maxOverride} minutes`:'No other eligible recipes in the library'); return false; }
   const r = pool[Math.floor(Math.random()*pool.length)];
   const rec = libRecipeObj(r, oldRec.day, scale);
   if(oldRec.double){ rec.double=true; rec.leftoverDay=oldRec.leftoverDay; }
@@ -2415,7 +2450,7 @@ function deleteCustomRecipe(idx){
 let crDraft=null;
 function openRecipeForm(editIdx){
   crDraft = editIdx!=null ? JSON.parse(JSON.stringify(S.customRecipes[editIdx])) :
-    {t:'',m:30,p:'chicken',tags:[],ing:[['',1,'count']],steps:[],custom:true};
+    {t:'',m:30,p:'chicken',tags:[],categories:[],ing:[['',1,'count']],steps:[],custom:true};
   crDraft._edit = editIdx;
   renderRecipeForm();
   $('#sheet').classList.add('show'); $('#sheet').scrollTop=0;
@@ -2434,6 +2469,8 @@ function renderRecipeForm(){
     </div>
     <div class="sublabel" style="margin-top:12px">Diet tags (what it's SAFE for)</div>
     <div class="chiprow">${dietTags.map(([k,l])=>`<button class="chip mini ${d.tags.includes(k)?'on':''}" onclick="crToggleTag('${k}')">${l}</button>`).join('')}</div>
+    <div class="sublabel" style="margin-top:12px">Recipe types</div>
+    <div class="chiprow">${RECIPE_CATEGORIES.map(c=>`<button class="chip mini ${(d.categories||[]).includes(c)?'on':''}" onclick="crToggleCategory('${c}')">${c}</button>`).join('')}</div>
     <div class="sublabel" style="margin-top:14px">Ingredients (for 4 servings)</div>
     <datalist id="knownIng">${Object.keys(PRICES).map(k=>`<option value="${esc(k)}">`).join('')}</datalist>
     ${d.ing.map((row,i)=>`<div class="addrow" style="margin-top:6px">
@@ -2450,6 +2487,7 @@ function renderRecipeForm(){
   </div>`;
 }
 function crToggleTag(k){ const i=crDraft.tags.indexOf(k); if(i>=0)crDraft.tags.splice(i,1); else crDraft.tags.push(k); renderRecipeForm(); }
+function crToggleCategory(k){crDraft.categories=crDraft.categories||[];const i=crDraft.categories.indexOf(k);if(i>=0)crDraft.categories.splice(i,1);else crDraft.categories.push(k);renderRecipeForm();}
 function saveCustomRecipe(){
   const d=crDraft;
   d.t = $('#crT').value.trim();
@@ -2461,7 +2499,7 @@ function saveCustomRecipe(){
   if(!d.ing.length){ toast('Add at least one ingredient'); return; }
   const unknown=d.ing.find(([n])=>!PRICES[n]);if(unknown){toast(`Choose a known ingredient for “${unknown[0]}”`);return;}
   if(d._edit==null && RECIPES.some(r=>r.t===d.t)){ toast('That name is taken — pick another'); return; }
-  const clean = {t:d.t,m:d.m,p:d.p,tags:d.tags,ing:d.ing,steps:d.steps,custom:true};
+  const clean = {t:d.t,m:d.m,p:d.p,tags:d.tags,categories:(d.categories||[]).length?d.categories:recipeCategories(d),ing:d.ing,steps:d.steps,custom:true};
   if(d._edit!=null){
     const oldT = S.customRecipes[d._edit].t;
     if(oldT!==d.t){ const i=RECIPES.findIndex(r=>r.t===oldT); if(i>=0)RECIPES.splice(i,1); delete STEPS[oldT]; }
@@ -3061,7 +3099,7 @@ function viewHelp(){
       `If you have a backup file: <b>Setup → Saving &amp; backup → ⬆ Restore</b>. If not, check the save status badge — if it says <b>⚠️ Not saving</b>, the app was never able to store anything, and moving it to a proper web address will fix that going forward.`)}
   </div>
 
-  <p class="sub" style="text-align:center;padding:8px 20px 4px">Sous Chef Shuffle v45 · ${RECIPES.length} recipes built in · optional shared household accounts</p>`;
+  <p class="sub" style="text-align:center;padding:8px 20px 4px">Sous Chef Shuffle v46 · ${RECIPES.length} recipes built in · optional shared household accounts</p>`;
 }
 
 /* ----- plan ----- */
@@ -3153,6 +3191,7 @@ function viewPlan(){
       <div class="schedulebar">
         <button onclick="openMoveMeal(${i})">Move day</button>
         <label>Time limit <select onchange="setNightLimit(${i},+this.value)">${[[0,'Default'],[15,'15 min'],[20,'20 min'],[30,'30 min'],[45,'45 min'],[60,'60 min']].map(([v,l])=>`<option value="${v}" ${nightLimitFor(r)===v?'selected':''}>${l}</option>`).join('')}</select></label>
+        <label>Type <select onchange="setNightCategory(${i},this.value)"><option value="">Any type</option>${RECIPE_CATEGORIES.map(c=>`<option value="${c}" ${nightCategoryFor(r)===c?'selected':''}>${c}</option>`).join('')}</select></label>
         <label>Cook <select onchange="setMealCook(${i},this.value)"><option value="">Anyone</option>${syncCookOptions().map(n=>`<option value="${esc(n)}" ${r.cook===n?'selected':''}>${esc(n)}</option>`).join('')}</select></label>
       </div>
       <ul class="ing-list" id="ing${i}">
@@ -3295,6 +3334,7 @@ function removeMeal(i){
 }
 function nightKey(r){ return `${r.week||1}-${r.day}`; }
 function nightLimitFor(r){ return +(S.nightLimits||{})[nightKey(r)]||0; }
+function nightCategoryFor(r){return String((S.nightCategories||{})[nightKey(r)]||'');}
 function openMoveMeal(i){
   const r=S.week&&S.week.recipes[i]; if(!r) return;
   const H=S.week.horizon||1;
@@ -3338,6 +3378,19 @@ function setNightLimit(i,limit){
     return;
   }
   S.week.planApproved=false; save(); render(); toast(limit?`${r.day} set to ${limit} minutes or less`:`${r.day} uses the default time`);
+}
+function setNightCategory(i,category){
+  const r=S.week&&S.week.recipes[i];if(!r)return;S.nightCategories=S.nightCategories||{};const key=nightKey(r),previous=S.nightCategories[key]||'';
+  if(category)S.nightCategories[key]=category;else delete S.nightCategories[key];
+  const src=RECIPES.find(x=>x.t===r.title);
+  if(category&&src&&!hasRecipeCategory(src,category)){
+    if(r.locked){if(previous)S.nightCategories[key]=previous;else delete S.nightCategories[key];save();render();toast('Unlock this dinner before changing its type');return;}
+    if(!libSwap(i,nightLimitFor(r)||0,category)){if(previous)S.nightCategories[key]=previous;else delete S.nightCategories[key];save();render();}return;
+  }
+  S.week.planApproved=false;save();render();toast(category?`${r.day} set to ${category}`:`${r.day} can use any recipe type`);
+}
+function toggleWeeklyCategory(category){
+  S.weeklyCategories=S.weeklyCategories||[];const i=S.weeklyCategories.indexOf(category);if(i>=0)S.weeklyCategories.splice(i,1);else S.weeklyCategories.push(category);save();render();
 }
 function rerunWeek(hi){
   const wk=S.history[hi]; if(!wk) return;
@@ -3462,9 +3515,10 @@ function openSheetFor(r, headline){
 }
 
 /* ----- recipe library ----- */
-let recipeBrowseFilter='all', recipeBrowseSort='match';
+let recipeBrowseFilter='all', recipeBrowseSort='category',recipeBrowseCategory='all';
 function viewRecipes(){
   let list=RECIPES.slice();
+  if(recipeBrowseCategory!=='all')list=list.filter(r=>hasRecipeCategory(r,recipeBrowseCategory));
   if(recipeBrowseFilter==='quick') list=list.filter(r=>effectiveMinutes(r)<=30);
   if(recipeBrowseFilter==='favorites') list=list.filter(r=>(S.favorites||[]).includes(r.t));
   if(recipeBrowseFilter==='vegetarian') list=list.filter(r=>r.tags.includes('vegetarian'));
@@ -3476,10 +3530,12 @@ function viewRecipes(){
   else if(recipeBrowseSort==='cost') list.sort((a,b)=>recipeCost4(a)-recipeCost4(b));
   else if(recipeBrowseSort==='pantry') list.sort((a,b)=>pantryScore(b)-pantryScore(a));
   else if(recipeBrowseSort==='rating') list.sort((a,b)=>((S.mealFeedback||{})[b.t]?.rating==='love'?1:0)-((S.mealFeedback||{})[a.t]?.rating==='love'?1:0));
+  else if(recipeBrowseSort==='category')list.sort((a,b)=>recipeCategories(a)[0].localeCompare(recipeCategories(b)[0])||a.t.localeCompare(b.t));
   else list.sort((a,b)=>a.t.localeCompare(b.t));
+  let lastGroup='';const cards=list.map(r=>{const safe=passesAvoid(r,avoidList())&&S.household.every(p=>!violatesPerson(r,p)),fb=(S.mealFeedback||{})[r.t],ps=pantryScore(r),group=recipeCategories(r)[0],heading=recipeBrowseSort==='category'&&group!==lastGroup?`<div class="catlabel" style="margin-top:14px">${esc(group)}</div>`:'';lastGroup=group;return `${heading}<div class="card recipecard" data-search="${esc((r.t+' '+r.ing.map(x=>x[0]).join(' ')+' '+recipeCategories(r).join(' ')).toLowerCase())}"><div><h3>${esc(r.t)} ${(S.favorites||[]).includes(r.t)?'♥':''}</h3><p class="sub" style="margin:0">${effectiveMinutes(r)} min · about ${money(recipeCost4(r))} for 4${ps?` · ${ps} pantry match${ps>1?'es':''}`:''}</p><div class="meta"><span class="pill ${safe?'leaf':'sq'}">${safe?'Fits household':'Check restrictions'}</span>${recipeCategories(r).map(c=>`<span class="pill est">${esc(c)}</span>`).join('')}${fb?.rating==='love'?'<span class="pill leaf">Family loves</span>':''}</div></div><button class="chip" onclick="openLibraryRecipe('${esc(r.t).replace(/'/g,"\\'")}')">View</button></div>`;}).join('');
   return `<div class="row"><div><h2 style="margin:2px 0">Recipes</h2><p class="sub" style="margin:2px 0">Browse all ${RECIPES.length} offline dinners</p></div><button class="chip on" onclick="openRecipeImport()">Import</button></div>
-    <div class="recipefilters"><input id="recipeSearch" type="search" placeholder="Search recipes or ingredients" oninput="filterRecipeCards(this.value)"><select onchange="recipeBrowseFilter=this.value;render()">${[['all','All recipes'],['priority','Uses selected pantry'],['quick','30 min or less'],['favorites','Favorites'],['family','Kid-friendly'],['vegetarian','Vegetarian'],['safe','Fits everyone']].map(([v,l])=>`<option value="${v}" ${recipeBrowseFilter===v?'selected':''}>${l}</option>`).join('')}</select><select onchange="recipeBrowseSort=this.value;render()">${[['match','A–Z'],['time','Shortest time'],['cost','Lowest cost'],['pantry','Best pantry match'],['rating','Family loves']].map(([v,l])=>`<option value="${v}" ${recipeBrowseSort===v?'selected':''}>${l}</option>`).join('')}</select></div><div class="row" style="margin-bottom:4px"><span class="sub" style="margin:0">Showing</span><span class="pill leaf" id="recipeCount">${list.length}</span></div>
-    <div id="recipeResults">${list.map(r=>{const safe=passesAvoid(r,avoidList())&&S.household.every(p=>!violatesPerson(r,p)),fb=(S.mealFeedback||{})[r.t],ps=pantryScore(r);return `<div class="card recipecard" data-search="${esc((r.t+' '+r.ing.map(x=>x[0]).join(' ')).toLowerCase())}"><div><h3>${esc(r.t)} ${(S.favorites||[]).includes(r.t)?'♥':''}</h3><p class="sub" style="margin:0">${effectiveMinutes(r)} min · about ${money(recipeCost4(r))} for 4${ps?` · ${ps} pantry match${ps>1?'es':''}`:''}</p><div class="meta"><span class="pill ${safe?'leaf':'sq'}">${safe?'Fits household':'Check restrictions'}</span>${fb?.rating==='love'?'<span class="pill leaf">Family loves</span>':''}${r.tags.includes('vegetarian')?'<span class="pill est">Vegetarian</span>':''}</div></div><button class="chip" onclick="openLibraryRecipe('${esc(r.t).replace(/'/g,"\\'")}')">View</button></div>`}).join('')}</div>`;
+    <div class="recipefilters"><input id="recipeSearch" type="search" placeholder="Search recipes or ingredients" oninput="filterRecipeCards(this.value)"><select aria-label="Recipe type" onchange="recipeBrowseCategory=this.value;render()"><option value="all">All types</option>${RECIPE_CATEGORIES.map(c=>`<option value="${c}" ${recipeBrowseCategory===c?'selected':''}>${c}</option>`).join('')}</select><select onchange="recipeBrowseFilter=this.value;render()">${[['all','All recipes'],['priority','Uses selected pantry'],['quick','30 min or less'],['favorites','Favorites'],['family','Kid-friendly'],['vegetarian','Vegetarian'],['safe','Fits everyone']].map(([v,l])=>`<option value="${v}" ${recipeBrowseFilter===v?'selected':''}>${l}</option>`).join('')}</select><select onchange="recipeBrowseSort=this.value;render()">${[['category','Group by type'],['match','A–Z'],['time','Shortest time'],['cost','Lowest cost'],['pantry','Best pantry match'],['rating','Family loves']].map(([v,l])=>`<option value="${v}" ${recipeBrowseSort===v?'selected':''}>${l}</option>`).join('')}</select></div><div class="row" style="margin-bottom:4px"><span class="sub" style="margin:0">Showing</span><span class="pill leaf" id="recipeCount">${list.length}</span></div>
+    <div id="recipeResults">${cards}</div>`;
 }
 function filterRecipeCards(q){
   q=String(q||'').trim().toLowerCase(); let n=0;
@@ -3500,7 +3556,7 @@ function parseRecipeImport(){
   ingLines.forEach(line=>{const l=line.toLowerCase().replace(/[•*]/g,' ').trim();let name=keys.find(k=>l.includes(k))||matchIngredient(line);if(!name){unknown.push(line);return;}const m=l.match(/(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)/);let q=1;if(m){if(m[1].includes(' ')){const [a,b]=m[1].split(/\s+/),[n,d]=b.split('/').map(Number);q=Number(a)+n/d;}else if(m[1].includes('/')){const [n,d]=m[1].split('/').map(Number);q=n/d;}else q=Number(m[1]);}if(!ing.some(x=>x[0]===name))ing.push([name,round2(q||1),PRICES[name].u]);});
   const steps=(stepAt>=0?lines.slice(stepAt+1):[]).map(s=>s.replace(/^\d+[.)]\s*|^[-•*]\s*/, '').trim()).filter(Boolean);
   const tm=raw.match(/(?:total\s+time|time)\s*:?\s*(\d+)\s*(?:min|minutes)/i)||raw.match(/(\d+)\s*(?:min|minutes)/i);
-  crDraft={t:title,m:tm?Math.max(5,+tm[1]):30,p:'veg',tags:[],ing:ing.length?ing:[['',1,'count']],steps,custom:true,_edit:null};
+  crDraft={t:title,m:tm?Math.max(5,+tm[1]):30,p:'veg',tags:[],categories:[],ing:ing.length?ing:[['',1,'count']],steps,custom:true,_edit:null};
   renderRecipeForm();$('#sheet').scrollTop=0;toast(unknown.length?`${ing.length} ingredients matched · ${unknown.length} need review`:`${ing.length} ingredients matched`);
 }
 function openLibraryRecipe(title){
@@ -3808,6 +3864,13 @@ function viewSetup(){
         <button onclick="S.dinners=Math.min(7,S.dinners+1);save();render()">+</button>
       </div>
     </div>
+  </div>
+
+  <div class="card">
+    <h2>Recipe types for the week</h2>
+    <p class="sub">Choose types you want included at least once when a new plan is built. Leave all unselected for a completely mixed week.</p>
+    <div class="chiprow">${RECIPE_CATEGORIES.map(c=>`<button class="chip mini ${(S.weeklyCategories||[]).includes(c)?'on':''}" onclick="toggleWeeklyCategory('${c}')">${c}</button>`).join('')}</div>
+    <p class="sub" style="margin-top:10px">For a particular night, use the <b>Type</b> menu beside that dinner in your plan. Sous Chef Shuffle will immediately find a matching replacement.</p>
   </div>
 
   <div class="card">
